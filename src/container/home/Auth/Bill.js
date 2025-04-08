@@ -1,12 +1,11 @@
-import React from 'react'
+import React from "react";
 
 const Bill = () => {
-  return (
-    <div>
-      <>
-      </>
-    </div>
-  )
-}
+    return (
+        <div>
+            <></>
+        </div>
+    );
+};
 
-export default Bill
+export default Bill;
