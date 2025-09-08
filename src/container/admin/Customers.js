@@ -1,6 +1,4 @@
 import React, { useEffect, useState } from "react";
-import HeaderAdmin from "../../components/admin/HeaderAdmin";
-import Navbar from "../../components/admin/Navbar";
 import axios from "axios";
 
 const Customers = () => {
@@ -39,7 +37,7 @@ const Customers = () => {
                     {/* Sidebar scroll*/}
                     <div>
                         {/* Sidebar navigation*/}
-                        <Navbar />
+                        {/* <Navbar /> */}
                         {/* End Sidebar navigation */}
                     </div>
                     {/* End Sidebar scroll*/}
@@ -48,7 +46,7 @@ const Customers = () => {
                 {/*  Main wrapper */}
                 <div className="body-wrapper">
                     {/*  Header Start */}
-                    <HeaderAdmin />
+                    {/* <HeaderAdmin /> */}
                     {/*  Header End */}
                     <div className="container-fluid">
                         <div className="container-fluid">

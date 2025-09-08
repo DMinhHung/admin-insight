@@ -1,6 +1,4 @@
 import React, { useEffect, useState } from "react";
-import HeaderAdmin from "../../components/admin/HeaderAdmin";
-import Navbar from "../../components/admin/Navbar";
 import axios from "axios";
 
 const Staffs = () => {
@@ -32,24 +30,9 @@ const Staffs = () => {
                 data-sidebar-position="fixed"
                 data-header-position="fixed"
             >
-                {/* Sidebar Start */}
-                <aside
-                    className="left-sidebar"
-                    style={{ backgroundColor: "darkgray" }}
-                >
-                    {/* Sidebar scroll*/}
-                    <div>
-                        {/* Sidebar navigation*/}
-                        <Navbar />
-                        {/* End Sidebar navigation */}
-                    </div>
-                    {/* End Sidebar scroll*/}
-                </aside>
-                {/*  Sidebar End */}
-                {/*  Main wrapper */}
                 <div className="body-wrapper">
                     {/*  Header Start */}
-                    <HeaderAdmin />
+                    {/* <HeaderAdmin /> */}
                     {/*  Header End */}
                     <div className="container-fluid">
                         <div className="container-fluid">

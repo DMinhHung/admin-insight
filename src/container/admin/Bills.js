@@ -1,6 +1,4 @@
 import React, { useEffect, useState } from "react";
-import HeaderAdmin from "../../components/admin/HeaderAdmin";
-import Navbar from "../../components/admin/Navbar";
 import axios from "axios";
 import { Modal, Button } from "react-bootstrap";
 import BillDetail from "./BillDetail"; // Import BillDetail component
@@ -54,11 +52,11 @@ const Bills = () => {
                 style={{ backgroundColor: "darkgray" }}
             >
                 <div>
-                    <Navbar />
+                    {/* <Navbar /> */}
                 </div>
             </aside>
             <div className="body-wrapper">
-                <HeaderAdmin />
+                {/* <HeaderAdmin /> */}
                 <div className="container-fluid">
                     <div className="container-fluid">
                         <div className="card">

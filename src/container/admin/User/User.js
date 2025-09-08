@@ -55,11 +55,11 @@ const onChange = (pagination, filters, sorter, extra) => {
   console.log('params', pagination, filters, sorter, extra);
 };
 
-const Product = () => (
+const User = () => (
   <div>
     {/* Tiêu đề trang */}
     <Title level={2} style={{ marginBottom: 24 }}>
-      Product
+      User
     </Title>
 
     {/* Bảng dữ liệu */}
@@ -72,4 +72,4 @@ const Product = () => (
   </div>
 );
 
-export default Product;
+export default User;
