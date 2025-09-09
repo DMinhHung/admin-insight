@@ -1,12 +1,11 @@
 import "../assets/css/style.css";
-import { Routes, Route } from "react-router-dom";
-import Bills from "../container/admin/Bills";
-import ProductAdmin from "../container/admin/Product/ProductAdmin";
-import Staffs from "../container/admin/Staffs";
-import Customers from "../container/admin/Customers";
-import Dashboard from "../container/admin/Dashboard";
+import { Routes, Route, Navigate  } from "react-router-dom";
+import ProductAdmin from "../pages/Product/ProductAdmin";
+import Staffs from "../pages/Staffs/Staffs";
+import Customers from "../pages/Customers/Customers";
+import Dashboard from "../pages/Dashboard/Dashboard";
 import App from "../components/layout/App";
-import User from "../container/admin/User/User";
+import User from "../pages/User/User";
 
 const AppRoutes = () => {
     return (
@@ -18,13 +17,12 @@ const AppRoutes = () => {
             <Route path="/bill" element={<Bill />} /> */
             }
             <Route path="/" element={<App />}>
+                <Route index element={<Navigate to="dashboard" replace />} />
                 <Route path="dashboard" element={<Dashboard />} />
                 <Route path="/product" element={<ProductAdmin />} />
                 <Route path="/user" element={<User />} />
-
                 <Route path="/customers" element={<Customers />} />
                 <Route path="/staffs" element={<Staffs />} />
-                <Route path="/bills" element={<Bills />} />
             </Route>
         </Routes>
     );
