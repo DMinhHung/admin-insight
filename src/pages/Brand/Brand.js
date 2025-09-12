@@ -5,7 +5,7 @@ import { EditOutlined, DeleteOutlined } from '@ant-design/icons';
 const { Title } = Typography;
 const { confirm } = Modal;
 
-const User = () => {
+const Brand = () => {
   const [searchText, setSearchText] = useState('');
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -15,48 +15,48 @@ const User = () => {
   const token = localStorage.getItem('accessToken');
   const hasFetched = useRef(false);
 
-  const fetchUsers = async (usernameSearch = '') => {
-    setLoading(true);
-    try {
-      const res = await fetch(
-        `${process.env.REACT_APP_ADMIN_INSIGHT_URL}/api/v1/admin/user/form${usernameSearch ? `?username=${usernameSearch}` : ''}`,
-        {
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-      if (!res.ok) throw new Error('Không thể tải danh sách user');
-      const data = await res.json();
-      const users = data?.data?.items ?? [];
-      setData(
-        users.map(u => ({
-          key: u.id,
-          username: u.username,
-          email: u.email,
-          role: u.role,
-          status: u.status,
-          logged_at: u.logged_at,
-        }))
-      );
-    } catch (err) {
-      message.error(err.message);
-    } finally {
-      setLoading(false);
-    }
-  };
+//   const fetchUsers = async (usernameSearch = '') => {
+//     setLoading(true);
+//     try {
+//       const res = await fetch(
+//         `${process.env.REACT_APP_ADMIN_INSIGHT_URL}/api/v1/admin/user/form${usernameSearch ? `?username=${usernameSearch}` : ''}`,
+//         {
+//           headers: {
+//             'Content-Type': 'application/json',
+//             Authorization: `Bearer ${token}`,
+//           },
+//         }
+//       );
+//       if (!res.ok) throw new Error('Không thể tải danh sách user');
+//       const data = await res.json();
+//       const users = data?.data?.items ?? [];
+//       setData(
+//         users.map(u => ({
+//           key: u.id,
+//           username: u.username,
+//           email: u.email,
+//           role: u.role,
+//           status: u.status,
+//           logged_at: u.logged_at,
+//         }))
+//       );
+//     } catch (err) {
+//       message.error(err.message);
+//     } finally {
+//       setLoading(false);
+//     }
+//   };
 
-  useEffect(() => {
-    if (hasFetched.current) return;
-    hasFetched.current = true;
-    fetchUsers();
-  }, []);
+//   useEffect(() => {
+//     if (hasFetched.current) return;
+//     hasFetched.current = true;
+//     fetchUsers();
+//   }, []);
 
   const handleSearch = () => fetchUsers(searchText);
 
   const handleCreate = () => {
-    setEditingUser(null); // tạo mới
+    setEditingUser(null);
     form.resetFields();
     setIsModalVisible(true);
   };
@@ -170,20 +170,10 @@ const User = () => {
   };
 
   const columns = [
-    { title: 'Username', dataIndex: 'username', sorter: (a, b) => a.username.localeCompare(b.username) },
-    { title: 'Email', dataIndex: 'email', sorter: (a, b) => a.email.localeCompare(b.email) },
-    {
-      title: 'Role',
-      dataIndex: 'role',
-      sorter: (a, b) => a.role.localeCompare(b.role),
-      render: (role) => {
-        let color = 'blue';
-        if (role === 'admin') color = 'red';
-        else if (role === 'manager') color = 'green';
-        else if (role === 'user') color = 'default';
-        return <Tag color={color}>{role.toUpperCase()}</Tag>;
-      },
-    },
+    { title: 'Name', dataIndex: 'name', sorter: (a, b) => a.username.localeCompare(b.username) },
+    { title: 'Slug', dataIndex: 'slug', sorter: (a, b) => a.email.localeCompare(b.email) },
+    { title: 'Description', dataIndex: 'description', sorter: (a, b) => a.email.localeCompare(b.email) },
+    { title: 'Logo', dataIndex: 'logo', sorter: (a, b) => a.email.localeCompare(b.email) },
     {
       title: 'Status',
       dataIndex: 'status',
@@ -206,7 +196,7 @@ const User = () => {
   return (
     <div style={{ padding: 24 }}>
       <Row justify="space-between" align="middle" style={{ marginBottom: 24 }}>
-        <Col><Title level={2}>User</Title></Col>
+        <Col><Title level={2}>Brand</Title></Col>
         <Col>
           <Space>
             <Input
@@ -268,4 +258,4 @@ const User = () => {
   );
 };
 
-export default User;
+export default Brand;

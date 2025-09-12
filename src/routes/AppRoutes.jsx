@@ -6,25 +6,26 @@ import Customers from "../pages/Customers/Customers";
 import Dashboard from "../pages/Dashboard/Dashboard";
 import App from "../components/layout/App";
 import User from "../pages/User/User";
+import Login from "../pages/Login/Login";
+import RequireAuth from "../components/RequireAuth";
+import Brand from "../pages/Brand/Brand";
 
 const AppRoutes = () => {
+    const token = localStorage.getItem("accessToken");
     return (
-        <Routes>
-            {/* <Route path="/login" element={<LoginHome />} />
-            <Route path="/register" element={<RegisterHome />} />
-            <Route path="/profile" element={<Profile />} />
-            <Route path="/wishlist" element={<Wishlist />} />
-            <Route path="/bill" element={<Bill />} /> */
-            }
-            <Route path="/" element={<App />}>
-                <Route index element={<Navigate to="dashboard" replace />} />
-                <Route path="dashboard" element={<Dashboard />} />
-                <Route path="/product" element={<ProductAdmin />} />
-                <Route path="/user" element={<User />} />
-                <Route path="/customers" element={<Customers />} />
-                <Route path="/staffs" element={<Staffs />} />
-            </Route>
-        </Routes>
-    );
+    <Routes>
+      <Route path="/login"element={token ? <Navigate to="/dashboard" replace /> : <Login />}/>
+      <Route path="/"element={<RequireAuth><App /></RequireAuth>}>
+        <Route index element={<Navigate to="dashboard" replace />} />
+        <Route path="dashboard" element={<Dashboard />} />
+        <Route path="brand" element={<Brand />} />
+        <Route path="product" element={<ProductAdmin />} />
+        <Route path="user" element={<User />} />
+        <Route path="customers" element={<Customers />} />
+        <Route path="staffs" element={<Staffs />} />
+      </Route>
+      <Route path="*"element={token ? <Navigate to="/dashboard" replace /> : <Navigate to="/login" replace />}/>
+    </Routes>
+  );
 };
 export default AppRoutes;

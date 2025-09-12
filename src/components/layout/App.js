@@ -70,11 +70,14 @@ const App = () => {
                     defaultSelectedKeys={['1']}
                     style={{ fontSize: 16, marginTop: 50 }}
                     items={[
-                        { key: '1', icon: <RiseOutlined style={{ fontSize: 20 }} />, label: <Link to="/dashboard">Dashboard</Link>, style: { marginBottom: 12 }, },
-                        { key: '2', icon: <ProductOutlined style={{ fontSize: 20 }} />, label: <Link to="/product">Product</Link>, style: { marginBottom: 12 }, },
-                        { key: '3', icon: <UserOutlined style={{ fontSize: 20 }} />, label: <Link to="/user">User Manager</Link>, style: { marginBottom: 12 }, },
-                        { key: '4', icon: <TeamOutlined style={{ fontSize: 20 }} />, label: <Link to="/customer">Customer</Link>, style: { marginBottom: 12 }, disabled: true },
-                        { key: '5', icon: <SettingOutlined style={{ fontSize: 20 }} />, label: 'Setting', style: { marginBottom: 12 }, disabled: true },
+                        { key: '1', icon: <RiseOutlined style={{ fontSize: 20 }} />, label: <Link to="/dashboard">Dashboard</Link>, style: { marginBottom: 12 }},
+                        { key: '2', icon: <TeamOutlined style={{ fontSize: 20 }} />, label: <Link to="/brand">Brand</Link>, style: { marginBottom: 12 }},
+                        { key: '3', icon: <ProductOutlined style={{ fontSize: 20 }} />, label: <Link to="/product">Product</Link>, style: { marginBottom: 12 }},
+                        { key: '4', icon: <TeamOutlined style={{ fontSize: 20 }} />, label: <Link to="/customer">Customer</Link>, style: { marginBottom: 12 }},
+                        { key: '5', icon: <TeamOutlined style={{ fontSize: 20 }} />, label: <Link to="/vendor">Vendor</Link>, style: { marginBottom: 12 }},
+                        { key: '6', icon: <TeamOutlined style={{ fontSize: 20 }} />, label: <Link to="/invoice">Invoice</Link>, style: { marginBottom: 12 }},
+                        { key: '7', icon: <UserOutlined style={{ fontSize: 20 }} />, label: <Link to="/user">User Manager</Link>, style: { marginBottom: 12 }},
+                        { key: '8', icon: <SettingOutlined style={{ fontSize: 20 }} />, label: 'Setting', style: { marginBottom: 12 }, disabled: true },
                     ]}
                 />
             </Sider>
