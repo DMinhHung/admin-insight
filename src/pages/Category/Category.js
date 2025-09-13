@@ -5,21 +5,21 @@ import { EditOutlined, DeleteOutlined, PlusOutlined } from '@ant-design/icons';
 const { Title } = Typography;
 const { confirm } = Modal;
 
-const Brand = () => {
+const Category = () => {
   const [searchText, setSearchText] = useState('');
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(false);
   const [isModalVisible, setIsModalVisible] = useState(false);
-  const [brandForm] = Form.useForm();
+  const [categoryForm] = Form.useForm();
   const [editingBrand, setEditingBrand] = useState(null);
   const token = localStorage.getItem('accessToken');
   const hasFetched = useRef(false);
 
-  const fetchBrand = async (nameSearch = '') => {
+  const fetchCategory = async (nameSearch = '') => {
     setLoading(true);
     try {
       const res = await fetch(
-        `${process.env.REACT_APP_ADMIN_INSIGHT_URL}/api/v1/admin/brand/form${nameSearch ? `?name=${nameSearch}` : ''}`,
+        `${process.env.REACT_APP_ADMIN_INSIGHT_URL}/api/v1/admin/category/form${nameSearch ? `?name=${nameSearch}` : ''}`,
         {
           headers: {
             'Content-Type': 'application/json',
@@ -27,7 +27,7 @@ const Brand = () => {
           },
         }
       );
-      if (!res.ok) throw new Error('Không thể tải danh sách brand');
+      if (!res.ok) throw new Error('Không thể tải danh sách');
       const data = await res.json();
       const brand = data?.data?.items ?? [];
       setData(
@@ -50,21 +50,21 @@ const Brand = () => {
   useEffect(() => {
     if (hasFetched.current) return;
     hasFetched.current = true;
-    fetchBrand();
+    fetchCategory();
   }, []);
 
-  const handleSearch = () => fetchBrand(searchText);
+  const handleSearch = () => fetchCategory(searchText);
 
   const handleCreate = () => {
     setEditingBrand(null);
-    brandForm.resetFields();
+    categoryForm.resetFields();
     setIsModalVisible(true);
   };
 
   const handleEdit = async (record) => {
     try {
       setLoading(true);
-      const res = await fetch(`${process.env.REACT_APP_ADMIN_INSIGHT_URL}/api/v1/admin/brand/form/view?id=${record.key}`, {
+      const res = await fetch(`${process.env.REACT_APP_ADMIN_INSIGHT_URL}/api/v1/admin/category/form/view?id=${record.key}`, {
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
@@ -84,7 +84,7 @@ const Brand = () => {
       };
 
       setEditingBrand(brand.id);
-      brandForm.setFieldsValue(formValues);
+      categoryForm.setFieldsValue(formValues);
       setIsModalVisible(true);
     } catch (err) {
       message.error(err.message);
@@ -95,16 +95,16 @@ const Brand = () => {
 
   const handleModalOk = async () => {
     try {
-      const values = await brandForm.validateFields();
+      const values = await categoryForm.validateFields();
       setLoading(true);
       let url = '';
       let method = '';
       if (editingBrand) {
-        url = `${process.env.REACT_APP_ADMIN_INSIGHT_URL}/api/v1/admin/brand/form/update`;
+        url = `${process.env.REACT_APP_ADMIN_INSIGHT_URL}/api/v1/admin/category/form/update`;
         method = 'POST';
         values.id = editingBrand;
       } else {
-        url = `${process.env.REACT_APP_ADMIN_INSIGHT_URL}/api/v1/admin/brand/form/create`;
+        url = `${process.env.REACT_APP_ADMIN_INSIGHT_URL}/api/v1/admin/category/form/create`;
         method = 'POST';
       }
 
@@ -122,9 +122,9 @@ const Brand = () => {
 
       message.success(editingBrand ? 'User updated successfully' : 'User created successfully');
       setIsModalVisible(false);
-      brandForm.resetFields();
+      categoryForm.resetFields();
       setEditingBrand(null);
-      fetchBrand();
+      fetchCategory();
     } catch (err) {
       message.error(err.message || 'Validate Failed');
     } finally {
@@ -147,7 +147,7 @@ const Brand = () => {
       if (!res.ok || !data) throw new Error(data?.message || 'Failed to delete');
 
       setData(prev => prev.filter(item => item.key !== id));
-      message.success('Delete successfully');
+      message.success('Deleted successfully');
     } catch (err) {
       message.error(err.message || 'Delete failed');
     } finally {
@@ -168,24 +168,6 @@ const Brand = () => {
 
   const columns = [
     { title: 'Name', dataIndex: 'name', sorter: (a, b) => a.name.localeCompare(b.name) },
-    {
-      title: 'Logo',
-      dataIndex: 'logo',
-      sorter: (a, b) => a.logo.localeCompare(b.logo),
-      render: url =>
-        url ? (
-          <Image
-            src={url}
-            alt="logo"
-            width={80}
-            height={80}
-            style={{ width: 80, height: 80, objectFit: 'contain', objectFit: 'cover' }}
-            preview={false}
-          />
-        ) : (
-          '—'
-        ),
-    },
     { title: 'Slug', dataIndex: 'slug', sorter: (a, b) => a.slug.localeCompare(b.slug) },
     { title: 'Description', dataIndex: 'description', sorter: (a, b) => a.description.localeCompare(b.description) },
     {
@@ -209,7 +191,7 @@ const Brand = () => {
   return (
     <div style={{ padding: 24 }}>
       <Row justify="space-between" align="middle" style={{ marginBottom: 24 }}>
-        <Col><Title level={2}>Brand</Title></Col>
+        <Col><Title level={2}>Category</Title></Col>
         <Col>
           <Space>
             <Input
@@ -227,12 +209,12 @@ const Brand = () => {
       <Modal
         title={editingBrand ? 'Edit' : 'Creater'}
         visible={isModalVisible}
-        onCancel={() => { setIsModalVisible(false); brandForm.resetFields(); setEditingBrand(null); }}
+        onCancel={() => { setIsModalVisible(false); categoryForm.resetFields(); setEditingBrand(null); }}
         onOk={handleModalOk}
         okText={editingBrand ? 'Update' : 'Create'}
         width={900}
       >
-        <Form form={brandForm} layout="vertical">
+        <Form form={categoryForm} layout="vertical">
           <Row gutter={16}>
             <Col span={12}><Form.Item name="name" label="Name" rules={[{ required: true }]}><Input /></Form.Item></Col>
             <Col span={12}><Form.Item name="slug" label="Slug"><Input /></Form.Item></Col>
@@ -247,33 +229,12 @@ const Brand = () => {
               </Form.Item>
             </Col>
             <Col span={12}>
-              <Form.Item
-                name="logo"
-                label="Logo"
-                getValueFromEvent={e => (Array.isArray(e) ? e : e?.fileList)}
-                extra="Upload brand logo"
-              >
-                <Upload
-                  listType="picture-card"
-                  maxCount={1}
-                  accept="image/*"
-                  beforeUpload={() => false}
-                >
-                  <div>
-                    <PlusOutlined />
-                    <div style={{ marginTop: 8 }}>Upload</div>
-                  </div>
-                </Upload>
+              <Form.Item name="parent" label="Parent" rules={[{ message: 'Select parent' }]}>
+                <Select placeholder="Select parent">
+                  <Select.Option value={1}>Active</Select.Option>
+                  <Select.Option value={2}>Inactive</Select.Option>
+                </Select>
               </Form.Item>
-
-              {editingBrand?.logo && (
-                <Image
-                  src={editingBrand.logo}
-                  alt="Current logo"
-                  width={100}
-                  style={{ marginTop: 8 }}
-                />
-              )}
             </Col>
           </Row>
           <Row gutter={16}>
@@ -298,4 +259,4 @@ const Brand = () => {
   );
 };
 
-export default Brand;
+export default Category;

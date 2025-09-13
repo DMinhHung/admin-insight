@@ -11,7 +11,7 @@ const User = () => {
   const [loading, setLoading] = useState(false);
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [form] = Form.useForm();
-  const [editingUser, setEditingUser] = useState(null); // lưu user đang edit
+  const [editingUser, setEditingUser] = useState(null);
   const token = localStorage.getItem('accessToken');
   const hasFetched = useRef(false);
 
@@ -222,7 +222,7 @@ const User = () => {
       </Row>
       <Table columns={columns} dataSource={data} loading={loading} />
       <Modal
-        title={editingUser ? 'Edit User' : 'Create User'}
+        title={editingUser ? 'Edit' : 'Create'}
         visible={isModalVisible}
         onCancel={() => { setIsModalVisible(false); form.resetFields(); setEditingUser(null); }}
         onOk={handleModalOk}

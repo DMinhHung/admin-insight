@@ -8,10 +8,25 @@ import {
     ProductOutlined,
     TeamOutlined,
     SettingOutlined,
-    BellOutlined
+    BellOutlined,
+    BlockOutlined,
+    UsergroupAddOutlined,
+    UserSwitchOutlined,
+    FileDoneOutlined
 } from '@ant-design/icons';
-import { Button, Layout, Menu, theme, Avatar, Dropdown, Spin, Badge, Drawer, List } from 'antd';
-import { Link, Outlet, useNavigate } from 'react-router-dom';
+import {
+    Button,
+    Layout,
+    Menu,
+    theme,
+    Avatar,
+    Dropdown,
+    Spin,
+    Badge,
+    Drawer,
+    List
+} from 'antd';
+import { Link, Outlet, useNavigate, useLocation } from 'react-router-dom';
 
 const { Header, Sider, Content } = Layout;
 
@@ -23,10 +38,22 @@ const App = () => {
         token: { colorBgContainer, borderRadiusLG },
     } = theme.useToken();
     const navigate = useNavigate();
+    const location = useLocation();
 
     const handleLogout = () => {
         console.log("User logged out");
         navigate("/login");
+    };
+
+    const pathKeyMap = {
+        '/dashboard': '1',
+        '/brand': '2',
+        '/category': '3',
+        '/product': '4',
+        '/customer': '5',
+        '/vendor': '6',
+        '/invoice': '7',
+        '/user': '8',
     };
 
     const menuItems = [
@@ -65,22 +92,25 @@ const App = () => {
                         {collapsed ? null : "Admin Insight"}
                     </div>
                 </div>
+
                 <Menu
                     mode="inline"
-                    defaultSelectedKeys={['1']}
+                    selectedKeys={[pathKeyMap[location.pathname] || '1']}
                     style={{ fontSize: 16, marginTop: 50 }}
                     items={[
                         { key: '1', icon: <RiseOutlined style={{ fontSize: 20 }} />, label: <Link to="/dashboard">Dashboard</Link>, style: { marginBottom: 12 }},
-                        { key: '2', icon: <TeamOutlined style={{ fontSize: 20 }} />, label: <Link to="/brand">Brand</Link>, style: { marginBottom: 12 }},
-                        { key: '3', icon: <ProductOutlined style={{ fontSize: 20 }} />, label: <Link to="/product">Product</Link>, style: { marginBottom: 12 }},
-                        { key: '4', icon: <TeamOutlined style={{ fontSize: 20 }} />, label: <Link to="/customer">Customer</Link>, style: { marginBottom: 12 }},
-                        { key: '5', icon: <TeamOutlined style={{ fontSize: 20 }} />, label: <Link to="/vendor">Vendor</Link>, style: { marginBottom: 12 }},
-                        { key: '6', icon: <TeamOutlined style={{ fontSize: 20 }} />, label: <Link to="/invoice">Invoice</Link>, style: { marginBottom: 12 }},
-                        { key: '7', icon: <UserOutlined style={{ fontSize: 20 }} />, label: <Link to="/user">User Manager</Link>, style: { marginBottom: 12 }},
-                        { key: '8', icon: <SettingOutlined style={{ fontSize: 20 }} />, label: 'Setting', style: { marginBottom: 12 }, disabled: true },
+                        { key: '2', icon: <BlockOutlined style={{ fontSize: 20 }} />, label: <Link to="/brand">Brand</Link>, style: { marginBottom: 12 }},
+                        { key: '3', icon: <BlockOutlined style={{ fontSize: 20 }} />, label: <Link to="/category">Category</Link>, style: { marginBottom: 12 }},
+                        { key: '4', icon: <ProductOutlined style={{ fontSize: 20 }} />, label: <Link to="/product">Product</Link>, style: { marginBottom: 12 }},
+                        { key: '5', icon: <UsergroupAddOutlined style={{ fontSize: 20 }} />, label: <Link to="/customer">Customer</Link>, style: { marginBottom: 12 }},
+                        { key: '6', icon: <UserSwitchOutlined style={{ fontSize: 20 }} />, label: <Link to="/vendor">Vendor</Link>, style: { marginBottom: 12 }},
+                        { key: '7', icon: <FileDoneOutlined style={{ fontSize: 20 }} />, label: <Link to="/invoice">Invoice</Link>, style: { marginBottom: 12 }},
+                        { key: '8', icon: <UserOutlined style={{ fontSize: 20 }} />, label: <Link to="/user">User Manager</Link>, style: { marginBottom: 12 }},
+                        { key: '9', icon: <SettingOutlined style={{ fontSize: 20 }} />, label: 'Setting', style: { marginBottom: 12 }, disabled: true },
                     ]}
                 />
             </Sider>
+
             <Layout>
                 <Header
                     style={{
@@ -99,7 +129,6 @@ const App = () => {
                     />
 
                     <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-                        {/* Chuông thông báo */}
                         <Badge count={notifications.length} size="small">
                             <BellOutlined
                                 style={{ fontSize: 24, cursor: 'pointer' }}
@@ -107,7 +136,6 @@ const App = () => {
                             />
                         </Badge>
 
-                        {/* Avatar */}
                         <Dropdown menu={{ items: menuItems }} placement="bottomRight">
                             <Avatar
                                 style={{ cursor: "pointer", backgroundColor: "#87d068" }}
@@ -138,7 +166,6 @@ const App = () => {
                 </Content>
             </Layout>
 
-            {/* Drawer thông báo */}
             <Drawer
                 title="Notifications"
                 placement="right"

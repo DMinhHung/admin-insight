@@ -9,6 +9,7 @@ import User from "../pages/User/User";
 import Login from "../pages/Login/Login";
 import RequireAuth from "../components/RequireAuth";
 import Brand from "../pages/Brand/Brand";
+import Category from "../pages/Category/Category";
 
 const AppRoutes = () => {
     const token = localStorage.getItem("accessToken");
@@ -19,6 +20,7 @@ const AppRoutes = () => {
         <Route index element={<Navigate to="dashboard" replace />} />
         <Route path="dashboard" element={<Dashboard />} />
         <Route path="brand" element={<Brand />} />
+        <Route path="category" element={<Category />} />
         <Route path="product" element={<ProductAdmin />} />
         <Route path="user" element={<User />} />
         <Route path="customers" element={<Customers />} />
