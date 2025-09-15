@@ -1,5 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Table, Typography, Input, Button, Space, message, Row, Col, Tag, Modal, Form, Select, Upload, Image } from 'antd';
+import {
+  Table, Typography, Input, Button, Space, message,
+  Row, Col, Tag, Modal, Form, Select, Upload, Image
+} from 'antd';
 import { EditOutlined, DeleteOutlined, PlusOutlined } from '@ant-design/icons';
 
 const { Title } = Typography;
@@ -8,45 +11,43 @@ const { confirm } = Modal;
 const Product = () => {
   const [searchText, setSearchText] = useState('');
   const [data, setData] = useState([]);
+  const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(false);
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [productForm] = Form.useForm();
-  const [editingBrand, setEditingBrand] = useState(null);
+  const [editingProduct, setEditingProduct] = useState(null);
+
+  const [thumbnailList, setThumbnailList] = useState([]);
+  const [galleryList, setGalleryList] = useState([]);
+
   const token = localStorage.getItem('accessToken');
   const hasFetched = useRef(false);
 
-  const fetchCategory = async (nameSearch = '') => {
+  const fetchProduct = async (nameSearch = '') => {
     setLoading(true);
     try {
       const res = await fetch(
         `${process.env.REACT_APP_ADMIN_INSIGHT_URL}/api/v1/admin/product/form${nameSearch ? `?name=${nameSearch}` : ''}`,
-        {
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${token}`,
-          },
-        }
+        { headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` } }
       );
       if (!res.ok) throw new Error('Không thể tải danh sách');
       const data = await res.json();
       const product = data?.data?.items ?? [];
-      setData(
-        product.map(product => ({
-          key: product.id,
-          name: product.name,
-          thumbnail: product.thumbnail,
-          slug: product.slug,
-          description: product.description,
-          status: product.status,
-          gallery: product.gallery,
-          sku: product.sku,
-          price: product.price,
-          cost: product.cost,
-          discount: product.discount,
-          stock: product.stock,
-          weight: product.weight,
-        }))
-      );
+      setData(product.map(p => ({
+        key: p.id,
+        name: p.name,
+        thumbnail: p.thumbnail,
+        slug: p.slug,
+        description: p.description,
+        status: p.status,
+        gallery: p.gallery,
+        sku: p.sku,
+        price: p.price,
+        cost: p.cost,
+        discount: p.discount,
+        stock: p.stock,
+        weight: p.weight,
+      })));
     } catch (err) {
       message.error(err.message);
     } finally {
@@ -57,32 +58,34 @@ const Product = () => {
   useEffect(() => {
     if (hasFetched.current) return;
     hasFetched.current = true;
-    fetchCategory();
+    fetchProduct();
   }, []);
 
-  const handleSearch = () => fetchCategory(searchText);
+  const handleSearch = () => fetchProduct(searchText);
 
-  const handleCreate = () => {
-    setEditingBrand(null);
+  const handleCreate = async () => {
+    setEditingProduct(null);
     productForm.resetFields();
+    setThumbnailList([]);
+    setGalleryList([]);
+    await fetchCategories();
     setIsModalVisible(true);
   };
 
   const handleEdit = async (record) => {
     try {
       setLoading(true);
-      const res = await fetch(`${process.env.REACT_APP_ADMIN_INSIGHT_URL}/api/v1/admin/product/form/view?id=${record.key}`, {
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-      });
+      await fetchCategories();
+      const res = await fetch(
+        `${process.env.REACT_APP_ADMIN_INSIGHT_URL}/api/v1/admin/product/form/view?id=${record.key}`,
+        { headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` } }
+      );
       const data = await res.json();
       if (!res.ok || !data) throw new Error(data?.data?.message || 'Cannot fetch data');
 
       const product = data?.data || {};
 
-      const formValues = {
+      productForm.setFieldsValue({
         name: product.name,
         thumbnail: product.thumbnail,
         slug: product.slug,
@@ -95,10 +98,26 @@ const Product = () => {
         discount: product.discount,
         stock: product.stock,
         weight: product.weight,
-      };
+        category_id: product.category_id,
+      });
 
-      setEditingBrand(product.id);
-      productForm.setFieldsValue(formValues);
+      setThumbnailList(
+        product.thumbnail
+          ? [{ uid: '-1', name: 'thumb.jpg', status: 'done', url: product.thumbnail }]
+          : []
+      );
+
+      setGalleryList(
+        (product.gallery || []).map((img, i) => ({
+          uid: String(i),
+          name: `gallery-${i}.jpg`,
+          status: 'done',
+          url: img.url,
+          response: { data: img },
+        }))
+      );
+
+      setEditingProduct(product.id);
       setIsModalVisible(true);
     } catch (err) {
       message.error(err.message);
@@ -112,33 +131,37 @@ const Product = () => {
       const values = await productForm.validateFields();
       setLoading(true);
       let url = '';
-      let method = '';
-      if (editingBrand) {
+      if (editingProduct) {
         url = `${process.env.REACT_APP_ADMIN_INSIGHT_URL}/api/v1/admin/product/form/update`;
-        method = 'POST';
-        values.id = editingBrand;
+        values.id = editingProduct;
       } else {
         url = `${process.env.REACT_APP_ADMIN_INSIGHT_URL}/api/v1/admin/product/form/create`;
-        method = 'POST';
       }
 
       const res = await fetch(url, {
-        method,
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify(values),
       });
-
       const data = await res.json();
-      if (!res.ok || !data) throw new Error(data?.data?.message || 'Operation failed');
 
-      message.success(editingBrand ? 'Updated successfully' : 'Created successfully');
+      if (!res.ok || !data.status) {
+        if (data.data && typeof data.data === 'object') {
+          Object.entries(data.data).forEach(([field, errors]) => {
+            if (Array.isArray(errors)) errors.forEach(errMsg => message.error(`${field}: ${errMsg}`));
+          });
+        } else {
+          message.error(data.messages || 'Operation failed');
+        }
+        return;
+      }
+      message.success(editingProduct ? 'Updated successfully' : 'Created successfully');
       setIsModalVisible(false);
       productForm.resetFields();
-      setEditingBrand(null);
-      fetchCategory();
+      setEditingProduct(null);
+      setThumbnailList([]);
+      setGalleryList([]);
+      fetchProduct();
     } catch (err) {
       message.error(err.message || 'Validate Failed');
     } finally {
@@ -149,14 +172,14 @@ const Product = () => {
   const handleDelete = async (id) => {
     try {
       setLoading(true);
-      const res = await fetch(`${process.env.REACT_APP_ADMIN_INSIGHT_URL}/api/v1/admin/product/form/delete`, {
-        method: 'POST',
-        body: JSON.stringify({ id }),
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-      });
+      const res = await fetch(
+        `${process.env.REACT_APP_ADMIN_INSIGHT_URL}/api/v1/admin/product/form/delete`,
+        {
+          method: 'POST',
+          body: JSON.stringify({ id }),
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        }
+      );
       const data = await res.json();
       if (!res.ok || !data) throw new Error(data?.message || 'Failed to delete');
 
@@ -180,36 +203,37 @@ const Product = () => {
     });
   };
 
+  const fetchCategories = async () => {
+    try {
+      const res = await fetch(
+        `${process.env.REACT_APP_ADMIN_INSIGHT_URL}/api/v1/admin/category/form`,
+        { headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` } }
+      );
+      if (!res.ok) throw new Error('Không thể tải danh sách category');
+      const data = await res.json();
+      setCategories(data?.data?.items || []);
+    } catch (err) {
+      message.error(err.message);
+    }
+  };
+
   const columns = [
     { title: 'Name', dataIndex: 'name', sorter: (a, b) => a.name.localeCompare(b.name) },
-    { title: 'Sku', dataIndex: 'sku', sorter: (a, b) => a.slug.localeCompare(b.sku) },
+    { title: 'Sku', dataIndex: 'sku', sorter: (a, b) => a.sku.localeCompare(b.sku) },
     {
       title: 'Image',
       dataIndex: 'thumbnail',
-      sorter: (a, b) => a.thumbnail.localeCompare(b.thumbnail),
       render: url =>
-        url ? (
-          <Image
-            src={url}
-            alt="thumbnail"
-            width={80}
-            height={80}
-            style={{ width: 80, height: 80, objectFit: 'contain', objectFit: 'cover' }}
-            preview={false}
-          />
-        ) : (
-          '—'
-        ),
-    }, 
-    { title: 'Slug', dataIndex: 'slug', sorter: (a, b) => a.slug.localeCompare(b.slug) },
-    { title: 'Price', dataIndex: 'price', sorter: (a, b) => a.slug.localeCompare(b.price) },
-    { title: 'Cost', dataIndex: 'cost', sorter: (a, b) => a.slug.localeCompare(b.cost) },
-    { title: 'Stock', dataIndex: 'stock', sorter: (a, b) => a.slug.localeCompare(b.stock) },
-    { title: 'Description', dataIndex: 'description', sorter: (a, b) => a.description.localeCompare(b.description) },
+        url ? <Image src={url} alt="thumbnail" width={80} height={80} style={{ objectFit: 'cover' }} preview={false} /> : '—',
+    },
+    { title: 'Slug', dataIndex: 'slug' },
+    { title: 'Price', dataIndex: 'price' },
+    { title: 'Cost', dataIndex: 'cost' },
+    { title: 'Stock', dataIndex: 'stock' },
+    { title: 'Description', dataIndex: 'description' },
     {
       title: 'Status',
       dataIndex: 'status',
-      sorter: (a, b) => a.status - b.status,
       render: value => value === 1 ? <Tag color="green">Active</Tag> : <Tag color="red">Inactive</Tag>
     },
     {
@@ -224,13 +248,10 @@ const Product = () => {
     }
   ];
 
-
   return (
     <div style={{ padding: 24 }}>
       <Row justify="space-between" align="middle" style={{ marginBottom: 24 }}>
-        <Col>
-          <Title level={2}>Product</Title>
-        </Col>
+        <Col><Title level={2}>Product</Title></Col>
         <Col>
           <Space>
             <Input
@@ -246,12 +267,19 @@ const Product = () => {
       </Row>
 
       <Table columns={columns} dataSource={data} loading={loading} />
-       <Modal
-        title={editingBrand ? 'Edit' : 'Creater'}
-        visible={isModalVisible}
-        onCancel={() => { setIsModalVisible(false); productForm.resetFields(); setEditingBrand(null); }}
+
+      <Modal
+        title={editingProduct ? 'Edit' : 'Create'}
+        open={isModalVisible}
+        onCancel={() => {
+          setIsModalVisible(false);
+          productForm.resetFields();
+          setEditingProduct(null);
+          setThumbnailList([]);
+          setGalleryList([]);
+        }}
         onOk={handleModalOk}
-        okText={editingBrand ? 'Update' : 'Create'}
+        okText={editingProduct ? 'Update' : 'Create'}
         width={900}
       >
         <Form form={productForm} layout="vertical">
@@ -269,9 +297,6 @@ const Product = () => {
           </Row>
           <Row gutter={16}>
             <Col span={12}><Form.Item name="stock" label="Stock" rules={[{ required: true }]}><Input /></Form.Item></Col>
-            <Col span={12}><Form.Item name="slug" label="Slug"><Input /></Form.Item></Col>
-          </Row>
-          <Row gutter={16}>
             <Col span={12}>
               <Form.Item name="status" label="Status" rules={[{ required: true, message: 'Select status' }]}>
                 <Select placeholder="Select status">
@@ -280,8 +305,27 @@ const Product = () => {
                 </Select>
               </Form.Item>
             </Col>
+          </Row>
+          <Row gutter={16}>
             <Col span={12}>
-              <Form.Item name="thumnail" label="Thumnail">
+              <Form.Item
+                name="category_id"
+                label="Category"
+                rules={[{ required: true, message: 'Select category' }]}
+              >
+                <Select placeholder="Select category" loading={!categories.length} allowClear>
+                  {categories.map(cat => (
+                    <Select.Option key={cat.id} value={cat.id}>{cat.name}</Select.Option>
+                  ))}
+                </Select>
+              </Form.Item>
+            </Col>
+          </Row>
+
+          {/* Thumbnail */}
+          <Row gutter={16}>
+            <Col span={12}>
+              <Form.Item name="thumbnail" label="Thumbnail" rules={[{ required: true, message: 'Vui lòng chọn ảnh' }]}>
                 <Upload
                   name="file"
                   listType="picture-card"
@@ -289,33 +333,86 @@ const Product = () => {
                   accept="image/*"
                   action={`${process.env.REACT_APP_ADMIN_INSIGHT_URL}/api/v1/general/upload/create`}
                   headers={{ Authorization: `Bearer ${token}` }}
-                  onChange={({ file }) => {
-                    if (file.status === 'done') {
-                      const { url, path } = file.response?.data || {};
-                      if (url && path) {
-                        productForm.setFieldsValue({ logo: url, logo_path: path });
-                        message.success('Upload thành công');
-                      }
-                    } else if (file.status === 'error') {
-                      message.error('Upload thất bại');
+                  fileList={thumbnailList}
+                  onChange={({ fileList }) => {
+                    setThumbnailList(fileList);
+                    const done = fileList.find(f => f.status === 'done');
+                    if (done?.response?.data) {
+                      const { url, path } = done.response.data;
+                      productForm.setFieldsValue({ thumbnail: url, thumbnail_path: path });
                     }
                   }}
                   onRemove={async (file) => {
                     try {
-                      const path = file.response?.data?.path || productForm.getFieldValue('logo_path');
+                      const path = file.response?.data?.path;
                       if (path) {
-                        await fetch(`${process.env.REACT_APP_ADMIN_INSIGHT_URL}/api/v1/general/upload/delete`, {
-                          method: 'POST',
-                          headers: {
-                            'Content-Type': 'application/json',
-                            Authorization: `Bearer ${token}`,
-                          },
-                          body: JSON.stringify({ path }),
-                        });
-                        productForm.setFieldsValue({ logo: null, logo_path: null });
-                        message.success('Xoá ảnh thành công');
+                        await fetch(
+                          `${process.env.REACT_APP_ADMIN_INSIGHT_URL}/api/v1/general/upload/delete`,
+                          {
+                            method: 'POST',
+                            headers: {
+                              'Content-Type': 'application/json',
+                              Authorization: `Bearer ${token}`,
+                            },
+                            body: JSON.stringify({ path }),
+                          }
+                        );
+                        productForm.setFieldsValue({ thumbnail: null, thumbnail_path: null });
                       }
-                    } catch (err) {
+                    } catch {
+                      message.error('Xoá ảnh thất bại');
+                    }
+                  }}
+                >
+                  {thumbnailList.length < 1 && (
+                    <div>
+                      <PlusOutlined />
+                      <div style={{ marginTop: 8 }}>Upload</div>
+                    </div>
+                  )}
+                </Upload>
+              </Form.Item>
+            </Col>
+
+            {/* Gallery */}
+            <Col span={12}>
+              <Form.Item name="gallery" label="Gallery" rules={[{ required: true, message: 'Vui lòng chọn ảnh' }]}>
+                <Upload
+                  name="file"
+                  listType="picture-card"
+                  accept="image/*"
+                  multiple
+                  action={`${process.env.REACT_APP_ADMIN_INSIGHT_URL}/api/v1/general/upload/create`}
+                  headers={{ Authorization: `Bearer ${token}` }}
+                  fileList={galleryList}
+                  onChange={({ fileList }) => {
+                    setGalleryList(fileList);
+                    const imgs = fileList
+                      .filter(f => f.status === 'done')
+                      .map(f => f.response?.data || { url: f.url, path: f.response?.data?.path });
+                    productForm.setFieldsValue({ gallery: imgs });
+                  }}
+                  onRemove={async (file) => {
+                    try {
+                      const path = file.response?.data?.path;
+                      if (path) {
+                        await fetch(
+                          `${process.env.REACT_APP_ADMIN_INSIGHT_URL}/api/v1/general/upload/delete`,
+                          {
+                            method: 'POST',
+                            headers: {
+                              'Content-Type': 'application/json',
+                              Authorization: `Bearer ${token}`,
+                            },
+                            body: JSON.stringify({ path }),
+                          }
+                        );
+                        const images = productForm
+                          .getFieldValue('gallery')
+                          .filter(img => img.path !== path);
+                        productForm.setFieldsValue({ gallery: images });
+                      }
+                    } catch {
                       message.error('Xoá ảnh thất bại');
                     }
                   }}
@@ -325,38 +422,14 @@ const Product = () => {
                     <div style={{ marginTop: 8 }}>Upload</div>
                   </div>
                 </Upload>
-                {productForm.getFieldValue('logo') && (
-                  <Image
-                    src={productForm.getFieldValue('logo')}
-                    alt="Current logo"
-                    width={100}
-                    style={{ marginTop: 8 }}
-                  />
-                )}
               </Form.Item>
-              {editingBrand?.logo && (
-                <Image
-                  src={editingBrand.logo}
-                  alt="Current logo"
-                  width={100}
-                  style={{ marginTop: 8 }}
-                />
-              )}
             </Col>
           </Row>
+
           <Row gutter={16}>
             <Col span={24}>
-              <Form.Item
-                name="description"
-                label="Description"
-                rules={[{ required: false }]}
-              >
-                <Input.TextArea
-                  rows={4}
-                  placeholder="Enter description..."
-                  showCount
-                  maxLength={500}
-                />
+              <Form.Item name="description" label="Description">
+                <Input.TextArea rows={4} placeholder="Enter description..." showCount maxLength={500} />
               </Form.Item>
             </Col>
           </Row>
