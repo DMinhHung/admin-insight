@@ -1,6 +1,6 @@
 import "../assets/css/style.css";
 import { Routes, Route, Navigate  } from "react-router-dom";
-import ProductAdmin from "../pages/Product/ProductAdmin";
+import Product from "../pages/Product/Product";
 import Staffs from "../pages/Staffs/Staffs";
 import Customers from "../pages/Customers/Customers";
 import Dashboard from "../pages/Dashboard/Dashboard";
@@ -21,7 +21,7 @@ const AppRoutes = () => {
         <Route path="dashboard" element={<Dashboard />} />
         <Route path="brand" element={<Brand />} />
         <Route path="category" element={<Category />} />
-        <Route path="product" element={<ProductAdmin />} />
+        <Route path="product" element={<Product />} />
         <Route path="user" element={<User />} />
         <Route path="customers" element={<Customers />} />
         <Route path="staffs" element={<Staffs />} />

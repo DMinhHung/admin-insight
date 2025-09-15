@@ -12,7 +12,8 @@ import {
     BlockOutlined,
     UsergroupAddOutlined,
     UserSwitchOutlined,
-    FileDoneOutlined
+    FileDoneOutlined,
+    ApartmentOutlined
 } from '@ant-design/icons';
 import {
     Button,
@@ -98,17 +99,78 @@ const App = () => {
                     selectedKeys={[pathKeyMap[location.pathname] || '1']}
                     style={{ fontSize: 16, marginTop: 50 }}
                     items={[
-                        { key: '1', icon: <RiseOutlined style={{ fontSize: 20 }} />, label: <Link to="/dashboard">Dashboard</Link>, style: { marginBottom: 12 }},
-                        { key: '2', icon: <BlockOutlined style={{ fontSize: 20 }} />, label: <Link to="/brand">Brand</Link>, style: { marginBottom: 12 }},
-                        { key: '3', icon: <BlockOutlined style={{ fontSize: 20 }} />, label: <Link to="/category">Category</Link>, style: { marginBottom: 12 }},
-                        { key: '4', icon: <ProductOutlined style={{ fontSize: 20 }} />, label: <Link to="/product">Product</Link>, style: { marginBottom: 12 }},
-                        { key: '5', icon: <UsergroupAddOutlined style={{ fontSize: 20 }} />, label: <Link to="/customer">Customer</Link>, style: { marginBottom: 12 }},
-                        { key: '6', icon: <UserSwitchOutlined style={{ fontSize: 20 }} />, label: <Link to="/vendor">Vendor</Link>, style: { marginBottom: 12 }},
-                        { key: '7', icon: <FileDoneOutlined style={{ fontSize: 20 }} />, label: <Link to="/invoice">Invoice</Link>, style: { marginBottom: 12 }},
-                        { key: '8', icon: <UserOutlined style={{ fontSize: 20 }} />, label: <Link to="/user">User Manager</Link>, style: { marginBottom: 12 }},
-                        { key: '9', icon: <SettingOutlined style={{ fontSize: 20 }} />, label: 'Setting', style: { marginBottom: 12 }, disabled: true },
+                        {
+                            key: '1',
+                            icon: <RiseOutlined style={{ fontSize: 20 }} />,
+                            label: <Link to="/dashboard">Dashboard</Link>,
+                            style: { marginBottom: 12 },
+                        },
+                        {
+                            key: '2',
+                            icon: <BlockOutlined style={{ fontSize: 20 }} />,
+                            label: <Link to="/brand">Brand</Link>,
+                            style: { marginBottom: 12 },
+                        },
+                        {
+                            key: '3',
+                            icon: <ApartmentOutlined style={{ fontSize: 20 }} />,
+                            label: <Link to="/category">Category</Link>,
+                            style: { marginBottom: 12 },
+                        },
+                        {
+                            key: '4',                            
+                            icon: <ProductOutlined style={{ fontSize: 20 }} />,
+                            label: 'Product',               
+                            style: { marginBottom: 12 },
+                            children: [               
+                                {
+                                    key: '4-1',
+                                    label: <Link to="/product">Product</Link>,
+                                },
+                                {
+                                    key: '4-2',
+                                    label: <Link to="/product-attribute">Product Attribute</Link>,
+                                },
+                                {
+                                    key: '4-2',
+                                    label: <Link to="/product-variant">Product Variant</Link>,
+                                },
+                            ],
+                        },
+                        {
+                            key: '5',
+                            icon: <UsergroupAddOutlined style={{ fontSize: 20 }} />,
+                            label: <Link to="/customer">Customer</Link>,
+                            style: { marginBottom: 12 },
+                        },
+                        {
+                            key: '6',
+                            icon: <UserSwitchOutlined style={{ fontSize: 20 }} />,
+                            label: <Link to="/vendor">Vendor</Link>,
+                            style: { marginBottom: 12 },
+                        },
+                        {
+                            key: '7',
+                            icon: <FileDoneOutlined style={{ fontSize: 20 }} />,
+                            label: <Link to="/invoice">Invoice</Link>,
+                            style: { marginBottom: 12 },
+                        },
+                        {
+                            key: '8',
+                            icon: <UserOutlined style={{ fontSize: 20 }} />,
+                            label: <Link to="/user">User Manager</Link>,
+                            style: { marginBottom: 12 },
+                        },
+                        {
+                            key: '9',
+                            icon: <SettingOutlined style={{ fontSize: 20 }} />,
+                            label: 'Setting',
+                            style: { marginBottom: 12 },
+                            disabled: true,
+                        },
                     ]}
                 />
+
             </Sider>
 
             <Layout>

@@ -5,21 +5,21 @@ import { EditOutlined, DeleteOutlined, PlusOutlined } from '@ant-design/icons';
 const { Title } = Typography;
 const { confirm } = Modal;
 
-const Brand = () => {
+const Product = () => {
   const [searchText, setSearchText] = useState('');
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(false);
   const [isModalVisible, setIsModalVisible] = useState(false);
-  const [brandForm] = Form.useForm();
+  const [productForm] = Form.useForm();
   const [editingBrand, setEditingBrand] = useState(null);
   const token = localStorage.getItem('accessToken');
   const hasFetched = useRef(false);
 
-  const fetchBrand = async (nameSearch = '') => {
+  const fetchCategory = async (nameSearch = '') => {
     setLoading(true);
     try {
       const res = await fetch(
-        `${process.env.REACT_APP_ADMIN_INSIGHT_URL}/api/v1/admin/brand/form${nameSearch ? `?name=${nameSearch}` : ''}`,
+        `${process.env.REACT_APP_ADMIN_INSIGHT_URL}/api/v1/admin/product/form${nameSearch ? `?name=${nameSearch}` : ''}`,
         {
           headers: {
             'Content-Type': 'application/json',
@@ -27,17 +27,24 @@ const Brand = () => {
           },
         }
       );
-      if (!res.ok) throw new Error('Không thể tải danh sách brand');
+      if (!res.ok) throw new Error('Không thể tải danh sách');
       const data = await res.json();
-      const brand = data?.data?.items ?? [];
+      const product = data?.data?.items ?? [];
       setData(
-        brand.map(brand => ({
-          key: brand.id,
-          name: brand.name,
-          logo: brand.logo,
-          slug: brand.slug,
-          description: brand.description,
-          status: brand.status,
+        product.map(product => ({
+          key: product.id,
+          name: product.name,
+          thumbnail: product.thumbnail,
+          slug: product.slug,
+          description: product.description,
+          status: product.status,
+          gallery: product.gallery,
+          sku: product.sku,
+          price: product.price,
+          cost: product.cost,
+          discount: product.discount,
+          stock: product.stock,
+          weight: product.weight,
         }))
       );
     } catch (err) {
@@ -50,21 +57,21 @@ const Brand = () => {
   useEffect(() => {
     if (hasFetched.current) return;
     hasFetched.current = true;
-    fetchBrand();
+    fetchCategory();
   }, []);
 
-  const handleSearch = () => fetchBrand(searchText);
+  const handleSearch = () => fetchCategory(searchText);
 
   const handleCreate = () => {
     setEditingBrand(null);
-    brandForm.resetFields();
+    productForm.resetFields();
     setIsModalVisible(true);
   };
 
   const handleEdit = async (record) => {
     try {
       setLoading(true);
-      const res = await fetch(`${process.env.REACT_APP_ADMIN_INSIGHT_URL}/api/v1/admin/brand/form/view?id=${record.key}`, {
+      const res = await fetch(`${process.env.REACT_APP_ADMIN_INSIGHT_URL}/api/v1/admin/product/form/view?id=${record.key}`, {
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
@@ -73,18 +80,25 @@ const Brand = () => {
       const data = await res.json();
       if (!res.ok || !data) throw new Error(data?.data?.message || 'Cannot fetch data');
 
-      const brand = data?.data || {};
+      const product = data?.data || {};
 
       const formValues = {
-        name: brand.name,
-        slug: brand.slug,
-        description: brand.description,
-        logo: brand.logo,
-        status: brand.status,
+        name: product.name,
+        thumbnail: product.thumbnail,
+        slug: product.slug,
+        description: product.description,
+        status: product.status,
+        gallery: product.gallery,
+        sku: product.sku,
+        price: product.price,
+        cost: product.cost,
+        discount: product.discount,
+        stock: product.stock,
+        weight: product.weight,
       };
 
-      setEditingBrand(brand.id);
-      brandForm.setFieldsValue(formValues);
+      setEditingBrand(product.id);
+      productForm.setFieldsValue(formValues);
       setIsModalVisible(true);
     } catch (err) {
       message.error(err.message);
@@ -95,16 +109,16 @@ const Brand = () => {
 
   const handleModalOk = async () => {
     try {
-      const values = await brandForm.validateFields();
+      const values = await productForm.validateFields();
       setLoading(true);
       let url = '';
       let method = '';
       if (editingBrand) {
-        url = `${process.env.REACT_APP_ADMIN_INSIGHT_URL}/api/v1/admin/brand/form/update`;
+        url = `${process.env.REACT_APP_ADMIN_INSIGHT_URL}/api/v1/admin/product/form/update`;
         method = 'POST';
         values.id = editingBrand;
       } else {
-        url = `${process.env.REACT_APP_ADMIN_INSIGHT_URL}/api/v1/admin/brand/form/create`;
+        url = `${process.env.REACT_APP_ADMIN_INSIGHT_URL}/api/v1/admin/product/form/create`;
         method = 'POST';
       }
 
@@ -122,9 +136,9 @@ const Brand = () => {
 
       message.success(editingBrand ? 'Updated successfully' : 'Created successfully');
       setIsModalVisible(false);
-      brandForm.resetFields();
+      productForm.resetFields();
       setEditingBrand(null);
-      fetchBrand();
+      fetchCategory();
     } catch (err) {
       message.error(err.message || 'Validate Failed');
     } finally {
@@ -135,7 +149,7 @@ const Brand = () => {
   const handleDelete = async (id) => {
     try {
       setLoading(true);
-      const res = await fetch(`${process.env.REACT_APP_ADMIN_INSIGHT_URL}/api/v1/admin/brand/form/delete`, {
+      const res = await fetch(`${process.env.REACT_APP_ADMIN_INSIGHT_URL}/api/v1/admin/product/form/delete`, {
         method: 'POST',
         body: JSON.stringify({ id }),
         headers: {
@@ -147,7 +161,7 @@ const Brand = () => {
       if (!res.ok || !data) throw new Error(data?.message || 'Failed to delete');
 
       setData(prev => prev.filter(item => item.key !== id));
-      message.success('Delete successfully');
+      message.success('Deleted successfully');
     } catch (err) {
       message.error(err.message || 'Delete failed');
     } finally {
@@ -158,7 +172,7 @@ const Brand = () => {
   const showDeleteConfirm = (record) => {
     confirm({
       title: 'Are you sure you want to delete this?',
-      content: `name: ${record.name}`,
+      content: `name: ${record.username}`,
       okText: 'Confirm',
       okType: 'danger',
       cancelText: 'Cancel',
@@ -168,15 +182,16 @@ const Brand = () => {
 
   const columns = [
     { title: 'Name', dataIndex: 'name', sorter: (a, b) => a.name.localeCompare(b.name) },
+    { title: 'Sku', dataIndex: 'sku', sorter: (a, b) => a.slug.localeCompare(b.sku) },
     {
-      title: 'Logo',
-      dataIndex: 'logo',
-      sorter: (a, b) => a.logo.localeCompare(b.logo),
+      title: 'Image',
+      dataIndex: 'thumbnail',
+      sorter: (a, b) => a.thumbnail.localeCompare(b.thumbnail),
       render: url =>
         url ? (
           <Image
             src={url}
-            alt="logo"
+            alt="thumbnail"
             width={80}
             height={80}
             style={{ width: 80, height: 80, objectFit: 'contain', objectFit: 'cover' }}
@@ -185,8 +200,11 @@ const Brand = () => {
         ) : (
           '—'
         ),
-    },
+    }, 
     { title: 'Slug', dataIndex: 'slug', sorter: (a, b) => a.slug.localeCompare(b.slug) },
+    { title: 'Price', dataIndex: 'price', sorter: (a, b) => a.slug.localeCompare(b.price) },
+    { title: 'Cost', dataIndex: 'cost', sorter: (a, b) => a.slug.localeCompare(b.cost) },
+    { title: 'Stock', dataIndex: 'stock', sorter: (a, b) => a.slug.localeCompare(b.stock) },
     { title: 'Description', dataIndex: 'description', sorter: (a, b) => a.description.localeCompare(b.description) },
     {
       title: 'Status',
@@ -206,35 +224,51 @@ const Brand = () => {
     }
   ];
 
+
   return (
     <div style={{ padding: 24 }}>
       <Row justify="space-between" align="middle" style={{ marginBottom: 24 }}>
-        <Col><Title level={2}>Brand</Title></Col>
+        <Col>
+          <Title level={2}>Product</Title>
+        </Col>
         <Col>
           <Space>
             <Input
-              placeholder="Search by name..."
+              placeholder="Search by name"
               value={searchText}
-              onChange={e => setSearchText(e.target.value)}
+              onChange={(e) => setSearchText(e.target.value)}
               style={{ width: 200 }}
-              onPressEnter={handleSearch}
             />
+            <Button type="primary" onClick={handleSearch}>Filter</Button>
             <Button type="primary" onClick={handleCreate}>Create</Button>
           </Space>
         </Col>
       </Row>
+
       <Table columns={columns} dataSource={data} loading={loading} />
-      <Modal
+       <Modal
         title={editingBrand ? 'Edit' : 'Creater'}
         visible={isModalVisible}
-        onCancel={() => { setIsModalVisible(false); brandForm.resetFields(); setEditingBrand(null); }}
+        onCancel={() => { setIsModalVisible(false); productForm.resetFields(); setEditingBrand(null); }}
         onOk={handleModalOk}
         okText={editingBrand ? 'Update' : 'Create'}
         width={900}
       >
-        <Form form={brandForm} layout="vertical">
+        <Form form={productForm} layout="vertical">
           <Row gutter={16}>
             <Col span={12}><Form.Item name="name" label="Name" rules={[{ required: true }]}><Input /></Form.Item></Col>
+            <Col span={12}><Form.Item name="sku" label="Sku" rules={[{ required: true }]}><Input /></Form.Item></Col>
+          </Row>
+          <Row gutter={16}>
+            <Col span={12}><Form.Item name="slug" label="Slug"><Input /></Form.Item></Col>
+            <Col span={12}><Form.Item name="discount" label="Discount"><Input /></Form.Item></Col>
+          </Row>
+          <Row gutter={16}>
+            <Col span={12}><Form.Item name="price" label="Price" rules={[{ required: true }]}><Input /></Form.Item></Col>
+            <Col span={12}><Form.Item name="cost" label="Cost" rules={[{ required: true }]}><Input /></Form.Item></Col>
+          </Row>
+          <Row gutter={16}>
+            <Col span={12}><Form.Item name="stock" label="Stock" rules={[{ required: true }]}><Input /></Form.Item></Col>
             <Col span={12}><Form.Item name="slug" label="Slug"><Input /></Form.Item></Col>
           </Row>
           <Row gutter={16}>
@@ -247,7 +281,7 @@ const Brand = () => {
               </Form.Item>
             </Col>
             <Col span={12}>
-              <Form.Item name="logo" label="Logo">
+              <Form.Item name="thumnail" label="Thumnail">
                 <Upload
                   name="file"
                   listType="picture-card"
@@ -259,7 +293,7 @@ const Brand = () => {
                     if (file.status === 'done') {
                       const { url, path } = file.response?.data || {};
                       if (url && path) {
-                        brandForm.setFieldsValue({ logo: url, logo_path: path });
+                        productForm.setFieldsValue({ logo: url, logo_path: path });
                         message.success('Upload thành công');
                       }
                     } else if (file.status === 'error') {
@@ -268,7 +302,7 @@ const Brand = () => {
                   }}
                   onRemove={async (file) => {
                     try {
-                      const path = file.response?.data?.path || brandForm.getFieldValue('logo_path');
+                      const path = file.response?.data?.path || productForm.getFieldValue('logo_path');
                       if (path) {
                         await fetch(`${process.env.REACT_APP_ADMIN_INSIGHT_URL}/api/v1/general/upload/delete`, {
                           method: 'POST',
@@ -278,7 +312,7 @@ const Brand = () => {
                           },
                           body: JSON.stringify({ path }),
                         });
-                        brandForm.setFieldsValue({ logo: null, logo_path: null });
+                        productForm.setFieldsValue({ logo: null, logo_path: null });
                         message.success('Xoá ảnh thành công');
                       }
                     } catch (err) {
@@ -291,9 +325,9 @@ const Brand = () => {
                     <div style={{ marginTop: 8 }}>Upload</div>
                   </div>
                 </Upload>
-                {brandForm.getFieldValue('logo') && (
+                {productForm.getFieldValue('logo') && (
                   <Image
-                    src={brandForm.getFieldValue('logo')}
+                    src={productForm.getFieldValue('logo')}
                     alt="Current logo"
                     width={100}
                     style={{ marginTop: 8 }}
@@ -332,4 +366,4 @@ const Brand = () => {
   );
 };
 
-export default Brand;
+export default Product;

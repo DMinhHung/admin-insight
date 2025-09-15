@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Table, Typography, Input, Button, Space, message, Row, Col, Tag, Modal, Form, Select, Upload, Image } from 'antd';
-import { EditOutlined, DeleteOutlined, PlusOutlined } from '@ant-design/icons';
+import { Table, Typography, Input, Button, Space, message, Row, Col, Tag, Modal, Form, Select } from 'antd';
+import { EditOutlined, DeleteOutlined } from '@ant-design/icons';
 
 const { Title } = Typography;
 const { confirm } = Modal;
@@ -120,7 +120,7 @@ const Category = () => {
       const data = await res.json();
       if (!res.ok || !data) throw new Error(data?.data?.message || 'Operation failed');
 
-      message.success(editingBrand ? 'User updated successfully' : 'User created successfully');
+      message.success(editingBrand ? 'Updated successfully' : 'Created successfully');
       setIsModalVisible(false);
       categoryForm.resetFields();
       setEditingBrand(null);
@@ -157,8 +157,8 @@ const Category = () => {
 
   const showDeleteConfirm = (record) => {
     confirm({
-      title: 'Are you sure you want to delete this user?',
-      content: `Username: ${record.username}`,
+      title: 'Are you sure you want to delete this?',
+      content: `name: ${record.name}`,
       okText: 'Confirm',
       okType: 'danger',
       cancelText: 'Cancel',
