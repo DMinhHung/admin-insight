@@ -37,11 +37,13 @@ const App = () => {
     <Layout style={{ minHeight: "100vh" }}>
       <Sider trigger={null} collapsible collapsed={collapsed} width={300}>
         <div
-          className="flex "
+          className=" text-white"
           style={{
             height: 32,
             margin: 16,
-            background: "rgba(255, 255, 255, 0.3)",
+            display: "flex",
+            alignItems: "center",
+            // background: "rgba(255, 255, 255, 0.3)",
           }}
         >
           <img
@@ -49,6 +51,7 @@ const App = () => {
             alt="Logo"
             style={{ maxHeight: "100%", maxWidth: "100%" }}
           />
+          <h4 className="mb-0 mx-2">Admin Insight</h4>
         </div>
         <Menu
           theme="dark"
