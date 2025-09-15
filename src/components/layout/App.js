@@ -51,7 +51,7 @@ const App = () => {
             alt="Logo"
             style={{ maxHeight: "100%", maxWidth: "100%" }}
           />
-          <h4 className="mb-0 mx-2">Admin Insight</h4>
+          {!collapsed && <h4 className="mb-0 mx-2">Admin Insight</h4>}
         </div>
         <Menu
           theme="dark"
@@ -76,7 +76,7 @@ const App = () => {
             {
               key: "4",
               icon: <UploadOutlined />,
-              label: "Setting",
+              label: <Link to="/seting">Seting</Link>,
             },
           ]}
         />
