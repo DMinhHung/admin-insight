@@ -2,26 +2,59 @@ import React, { useState, Suspense } from "react";
 import {
   MenuFoldOutlined,
   MenuUnfoldOutlined,
-  UploadOutlined,
   UserOutlined,
-  VideoCameraOutlined,
   LogoutOutlined,
+  RiseOutlined,
+  ProductOutlined,
+  TeamOutlined,
+  SettingOutlined,
+  BellOutlined,
+  BlockOutlined,
+  UsergroupAddOutlined,
+  UserSwitchOutlined,
+  FileDoneOutlined,
+  ApartmentOutlined,
 } from "@ant-design/icons";
-import { Button, Layout, Menu, theme, Avatar, Dropdown, Spin } from "antd";
-import { Link, Outlet, useNavigate } from "react-router-dom";
+import {
+  Button,
+  Layout,
+  Menu,
+  theme,
+  Avatar,
+  Dropdown,
+  Spin,
+  Badge,
+  Drawer,
+  List,
+} from "antd";
+import { Link, Outlet, useNavigate, useLocation } from "react-router-dom";
 
 const { Header, Sider, Content } = Layout;
 
 const App = () => {
   const [collapsed, setCollapsed] = useState(false);
+  const [drawerVisible, setDrawerVisible] = useState(false);
+
   const {
     token: { colorBgContainer, borderRadiusLG },
   } = theme.useToken();
   const navigate = useNavigate();
+  const location = useLocation();
 
   const handleLogout = () => {
     console.log("User logged out");
     navigate("/login");
+  };
+
+  const pathKeyMap = {
+    "/dashboard": "1",
+    "/brand": "2",
+    "/category": "3",
+    "/product": "4",
+    "/customer": "5",
+    "/vendor": "6",
+    "/invoice": "7",
+    "/user": "8",
   };
 
   const menuItems = [
@@ -33,54 +66,124 @@ const App = () => {
     },
   ];
 
+  const notifications = [
+    "New user registered",
+    "New order received",
+    "Server downtime alert",
+  ];
+
   return (
     <Layout style={{ minHeight: "100vh" }}>
-      <Sider trigger={null} collapsible collapsed={collapsed} width={300}>
+      <Sider
+        trigger={null}
+        collapsible
+        collapsed={collapsed}
+        theme="light"
+        width={300}
+      >
         <div
-          className=" text-white"
           style={{
             height: 32,
             margin: 16,
-            display: "flex",
-            alignItems: "center",
-            // background: "rgba(255, 255, 255, 0.3)",
+            background: "rgba(255, 255, 255, 0.3)",
           }}
         >
-          <img
-            src="/logo192.png"
-            alt="Logo"
-            style={{ maxHeight: "100%", maxWidth: "100%" }}
-          />
-          {!collapsed && <h4 className="mb-0 mx-2">Admin Insight</h4>}
+          <div
+            style={{
+              height: 48,
+              margin: 16,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              fontSize: 25,
+              fontWeight: "bold",
+              color: "#1677ff",
+              letterSpacing: 1,
+              borderRadius: 8,
+            }}
+          >
+            {collapsed ? null : "Admin Insight"}
+          </div>
         </div>
+
         <Menu
-          theme="dark"
           mode="inline"
-          defaultSelectedKeys={["1"]}
+          selectedKeys={[pathKeyMap[location.pathname] || "1"]}
+          style={{ fontSize: 16, marginTop: 50 }}
           items={[
             {
               key: "1",
-              icon: <VideoCameraOutlined />,
+              icon: <RiseOutlined style={{ fontSize: 20 }} />,
               label: <Link to="/dashboard">Dashboard</Link>,
+              style: { marginBottom: 12 },
             },
             {
               key: "2",
-              icon: <VideoCameraOutlined />,
-              label: <Link to="/product">Product</Link>,
+              icon: <BlockOutlined style={{ fontSize: 20 }} />,
+              label: <Link to="/brand">Brand</Link>,
+              style: { marginBottom: 12 },
             },
             {
               key: "3",
-              icon: <UserOutlined />,
-              label: <Link to="/user">User Manager</Link>,
+              icon: <ApartmentOutlined style={{ fontSize: 20 }} />,
+              label: <Link to="/category">Category</Link>,
+              style: { marginBottom: 12 },
             },
             {
               key: "4",
-              icon: <UploadOutlined />,
-              label: <Link to="/seting">Seting</Link>,
+              icon: <ProductOutlined style={{ fontSize: 20 }} />,
+              label: "Product",
+              style: { marginBottom: 12 },
+              children: [
+                {
+                  key: "4-1",
+                  label: <Link to="/product">Product</Link>,
+                },
+                {
+                  key: "4-2",
+                  label: <Link to="/product-attribute">Product Attribute</Link>,
+                },
+                {
+                  key: "4-2",
+                  label: <Link to="/product-variant">Product Variant</Link>,
+                },
+              ],
+            },
+            {
+              key: "5",
+              icon: <UsergroupAddOutlined style={{ fontSize: 20 }} />,
+              label: <Link to="/customer">Customer</Link>,
+              style: { marginBottom: 12 },
+            },
+            {
+              key: "6",
+              icon: <UserSwitchOutlined style={{ fontSize: 20 }} />,
+              label: <Link to="/vendor">Vendor</Link>,
+              style: { marginBottom: 12 },
+            },
+            {
+              key: "7",
+              icon: <FileDoneOutlined style={{ fontSize: 20 }} />,
+              label: <Link to="/invoice">Invoice</Link>,
+              style: { marginBottom: 12 },
+            },
+            {
+              key: "8",
+              icon: <UserOutlined style={{ fontSize: 20 }} />,
+              label: <Link to="/user">User Manager</Link>,
+              style: { marginBottom: 12 },
+            },
+            {
+              key: "9",
+              icon: <SettingOutlined style={{ fontSize: 20 }} />,
+              label: "Setting",
+              style: { marginBottom: 12 },
+              disabled: true,
             },
           ]}
         />
       </Sider>
+
       <Layout>
         <Header
           style={{
@@ -95,19 +198,24 @@ const App = () => {
             type="text"
             icon={collapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />}
             onClick={() => setCollapsed(!collapsed)}
-            style={{
-              fontSize: "16px",
-              width: 64,
-              height: 64,
-            }}
+            style={{ fontSize: "16px", width: 64, height: 64 }}
           />
 
-          <Dropdown menu={{ items: menuItems }} placement="bottomRight">
-            <Avatar
-              style={{ cursor: "pointer", backgroundColor: "#87d068" }}
-              icon={<UserOutlined />}
-            />
-          </Dropdown>
+          <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+            <Badge count={notifications.length} size="small">
+              <BellOutlined
+                style={{ fontSize: 24, cursor: "pointer" }}
+                onClick={() => setDrawerVisible(true)}
+              />
+            </Badge>
+
+            <Dropdown menu={{ items: menuItems }} placement="bottomRight">
+              <Avatar
+                style={{ cursor: "pointer", backgroundColor: "#87d068" }}
+                icon={<UserOutlined />}
+              />
+            </Dropdown>
+          </div>
         </Header>
 
         <Content
@@ -119,7 +227,6 @@ const App = () => {
             borderRadius: borderRadiusLG,
           }}
         >
-          {/* Loading khi chuyển trang */}
           <Suspense
             fallback={
               <div style={{ textAlign: "center", marginTop: 50 }}>
@@ -131,6 +238,19 @@ const App = () => {
           </Suspense>
         </Content>
       </Layout>
+
+      <Drawer
+        title="Notifications"
+        placement="right"
+        onClose={() => setDrawerVisible(false)}
+        open={drawerVisible}
+        width={350}
+      >
+        <List
+          dataSource={notifications}
+          renderItem={(item) => <List.Item>{item}</List.Item>}
+        />
+      </Drawer>
     </Layout>
   );
 };
