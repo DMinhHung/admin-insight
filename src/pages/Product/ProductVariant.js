@@ -1,24 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
-import {
-  Table,
-  Typography,
-  Input,
-  Button,
-  Space,
-  message,
-  Row,
-  Col,
-  Tag,
-  Modal,
-  Form,
-  Select,
-} from 'antd';
+import { Table, Typography, Input, Button, Space, message, Row, Col, Tag, Modal, Form, Select } from 'antd';
 import { EditOutlined, DeleteOutlined } from '@ant-design/icons';
 
 const { Title } = Typography;
 const { confirm } = Modal;
 
-const ProductAttribute = () => {
+const ProductVariant = () => {
   const [searchText, setSearchText] = useState('');
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -32,9 +19,7 @@ const ProductAttribute = () => {
     setLoading(true);
     try {
       const res = await fetch(
-        `${process.env.REACT_APP_ADMIN_INSIGHT_URL}/api/v1/admin/product/item-attribute${
-          nameSearch ? `?name=${nameSearch}` : ''
-        }`,
+        `${process.env.REACT_APP_ADMIN_INSIGHT_URL}/api/v1/admin/product/item-attribute${nameSearch ? `?name=${nameSearch}` : ''}`,
         {
           headers: {
             'Content-Type': 'application/json',
@@ -46,13 +31,11 @@ const ProductAttribute = () => {
       const result = await res.json();
       const items = result?.data?.items ?? [];
 
-      const formattedData = items.map((item) => ({
+      const formattedData = items.map(item => ({
         key: item.id,
         name: item.name,
         status: item.status,
-        values: Array.isArray(item.value)
-          ? item.value.map((v) => ({ id: v.id, value: v.value }))
-          : [],
+        value: item.value?.value || '',
         created_at: item.created_at,
         updated_at: item.updated_at,
       }));
@@ -92,18 +75,16 @@ const ProductAttribute = () => {
         }
       );
       const result = await res.json();
-      if (!res.ok || !result?.data)
-        throw new Error(result?.data?.message || 'Cannot fetch data');
+      if (!res.ok || !result?.data) throw new Error(result?.data?.message || 'Cannot fetch data');
 
-      const item = result.data;
-
-      // Chuyển mảng object value -> mảng string cho Select mode="tags"
+      const item = result.data; // đây là object chi tiết của product attribute
       const formValues = {
         name: item.name,
+        slug: item.slug,
         status: item.status,
-        value: Array.isArray(item.value)
-          ? item.value.map((v) => v.value)
-          : [],
+        parent: item.parent,
+        description: item.description,
+        value: item.value?.value || '',
       };
 
       setEditingProduct(item.id);
@@ -138,8 +119,7 @@ const ProductAttribute = () => {
       });
 
       const result = await res.json();
-      if (!res.ok || !result)
-        throw new Error(result?.data?.message || 'Operation failed');
+      if (!res.ok || !result) throw new Error(result?.data?.message || 'Operation failed');
 
       message.success(editingProduct ? 'Updated successfully' : 'Created successfully');
       setIsModalVisible(false);
@@ -156,22 +136,18 @@ const ProductAttribute = () => {
   const handleDelete = async (id) => {
     try {
       setLoading(true);
-      const res = await fetch(
-        `${process.env.REACT_APP_ADMIN_INSIGHT_URL}/api/v1/admin/product/item-attribute/delete`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({ id }),
-        }
-      );
+      const res = await fetch(`${process.env.REACT_APP_ADMIN_INSIGHT_URL}/api/v1/admin/product/item-attribute/delete`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ id }),
+      });
       const result = await res.json();
-      if (!res.ok || !result)
-        throw new Error(result?.message || 'Failed to delete');
+      if (!res.ok || !result) throw new Error(result?.message || 'Failed to delete');
 
-      setData((prev) => prev.filter((item) => item.key !== id));
+      setData(prev => prev.filter(item => item.key !== id));
       message.success('Deleted successfully');
     } catch (err) {
       message.error(err.message || 'Delete failed');
@@ -195,41 +171,20 @@ const ProductAttribute = () => {
 
   const columns = [
     { title: 'Name', dataIndex: 'name', sorter: (a, b) => a.name.localeCompare(b.name) },
-    {
-      title: 'Values',
-      dataIndex: 'values',
-      render: (values) => (
-        <>
-          {values.map((v) => (
-            <Tag color="blue" key={v.id}>
-              {v.value}
-            </Tag>
-          ))}
-        </>
-      ),
-    },
+    { title: 'Value', dataIndex: 'value', sorter: (a, b) => (a.value || '').localeCompare(b.value || '') },
     {
       title: 'Status',
       dataIndex: 'status',
       sorter: (a, b) => a.status - b.status,
-      render: (value) =>
-        value === 1 ? <Tag color="green">Active</Tag> : <Tag color="red">Inactive</Tag>,
+      render: value => (value === 1 ? <Tag color="green">Active</Tag> : <Tag color="red">Inactive</Tag>),
     },
     {
       title: 'Actions',
       key: 'actions',
       render: (_, record) => (
         <Space size="middle">
-          <Button
-            type="primary"
-            icon={<EditOutlined />}
-            onClick={() => handleEdit(record)}
-          />
-          <Button
-            danger
-            icon={<DeleteOutlined />}
-            onClick={() => showDeleteConfirm(record)}
-          />
+          <Button type="primary" icon={<EditOutlined />} onClick={() => handleEdit(record)} />
+          <Button danger icon={<DeleteOutlined />} onClick={() => showDeleteConfirm(record)} />
         </Space>
       ),
     },
@@ -238,65 +193,37 @@ const ProductAttribute = () => {
   return (
     <div style={{ padding: 24 }}>
       <Row justify="space-between" align="middle" style={{ marginBottom: 24 }}>
-        <Col>
-          <Title level={2}>Product Attribute</Title>
-        </Col>
+        <Col><Title level={2}>Product Variant</Title></Col>
         <Col>
           <Space>
             <Input
               placeholder="Search by name..."
               value={searchText}
-              onChange={(e) => setSearchText(e.target.value)}
+              onChange={e => setSearchText(e.target.value)}
               style={{ width: 200 }}
               onPressEnter={handleSearch}
             />
-            <Button type="primary" onClick={handleCreate}>
-              Create
-            </Button>
+            <Button type="primary" onClick={handleCreate}>Create</Button>
           </Space>
         </Col>
       </Row>
       <Table columns={columns} dataSource={data} loading={loading} />
       <Modal
         title={editingProduct ? 'Edit' : 'Create'}
-        open={isModalVisible}
-        onCancel={() => {
-          setIsModalVisible(false);
-          productForm.resetFields();
-          setEditingProduct(null);
-        }}
+        visible={isModalVisible}
+        onCancel={() => { setIsModalVisible(false); productForm.resetFields(); setEditingProduct(null); }}
         onOk={handleModalOk}
         okText={editingProduct ? 'Update' : 'Create'}
         width={900}
       >
         <Form form={productForm} layout="vertical">
           <Row gutter={16}>
-            <Col span={12}>
-              <Form.Item name="name" label="Name" rules={[{ required: true }]}>
-                <Input />
-              </Form.Item>
-            </Col>
-            <Col span={12}>
-              <Form.Item
-                name="value"
-                label="Values"
-                rules={[{ required: true, message: 'Nhập ít nhất 1 value' }]}
-              >
-                <Select
-                  mode="tags"
-                  tokenSeparators={[',']}
-                  placeholder="Nhập nhiều value, Enter hoặc , để thêm"
-                />
-              </Form.Item>
-            </Col>
+            <Col span={12}><Form.Item name="name" label="Name" rules={[{ required: true }]}><Input /></Form.Item></Col>
+            <Col span={12}><Form.Item name="value" label="Value"><Input /></Form.Item></Col>
           </Row>
           <Row gutter={16}>
             <Col span={12}>
-              <Form.Item
-                name="status"
-                label="Status"
-                rules={[{ required: true, message: 'Select status' }]}
-              >
+              <Form.Item name="status" label="Status" rules={[{ required: true, message: 'Select status' }]}>
                 <Select placeholder="Select status">
                   <Select.Option value={1}>Active</Select.Option>
                   <Select.Option value={2}>Inactive</Select.Option>
@@ -310,4 +237,4 @@ const ProductAttribute = () => {
   );
 };
 
-export default ProductAttribute;
+export default ProductVariant;

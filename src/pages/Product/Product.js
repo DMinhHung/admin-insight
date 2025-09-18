@@ -4,6 +4,7 @@ import {
   Row, Col, Tag, Modal, Form, Select, Upload, Image
 } from 'antd';
 import { EditOutlined, DeleteOutlined, PlusOutlined } from '@ant-design/icons';
+import VariantTable from './table/VariantTable';
 
 const { Title } = Typography;
 const { confirm } = Modal;
@@ -31,8 +32,8 @@ const Product = () => {
         { headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` } }
       );
       if (!res.ok) throw new Error('Không thể tải danh sách');
-      const data = await res.json();
-      const product = data?.data?.items ?? [];
+      const dataRes = await res.json();
+      const product = dataRes?.data?.items ?? [];
       setData(product.map(p => ({
         key: p.id,
         name: p.name,
@@ -143,15 +144,15 @@ const Product = () => {
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify(values),
       });
-      const data = await res.json();
+      const dataRes = await res.json();
 
-      if (!res.ok || !data.status) {
-        if (data.data && typeof data.data === 'object') {
-          Object.entries(data.data).forEach(([field, errors]) => {
+      if (!res.ok || !dataRes.status) {
+        if (dataRes.data && typeof dataRes.data === 'object') {
+          Object.entries(dataRes.data).forEach(([field, errors]) => {
             if (Array.isArray(errors)) errors.forEach(errMsg => message.error(`${field}: ${errMsg}`));
           });
         } else {
-          message.error(data.messages || 'Operation failed');
+          message.error(dataRes.messages || 'Operation failed');
         }
         return;
       }
@@ -180,8 +181,8 @@ const Product = () => {
           headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         }
       );
-      const data = await res.json();
-      if (!res.ok || !data) throw new Error(data?.message || 'Failed to delete');
+      const dataRes = await res.json();
+      if (!res.ok || !dataRes) throw new Error(dataRes?.message || 'Failed to delete');
 
       setData(prev => prev.filter(item => item.key !== id));
       message.success('Deleted successfully');
@@ -266,7 +267,17 @@ const Product = () => {
         </Col>
       </Row>
 
-      <Table columns={columns} dataSource={data} loading={loading} />
+      <Table
+  columns={columns}
+  dataSource={data}
+  loading={loading}
+  expandable={{
+    expandedRowRender: (record) => (
+      <VariantTable productId={record.key} />
+    ),
+    rowExpandable: () => true,
+  }}
+      />
 
       <Modal
         title={editingProduct ? 'Edit' : 'Create'}
@@ -322,7 +333,6 @@ const Product = () => {
             </Col>
           </Row>
 
-          {/* Thumbnail */}
           <Row gutter={16}>
             <Col span={12}>
               <Form.Item name="thumbnail" label="Thumbnail" rules={[{ required: true, message: 'Vui lòng chọn ảnh' }]}>
@@ -374,7 +384,6 @@ const Product = () => {
               </Form.Item>
             </Col>
 
-            {/* Gallery */}
             <Col span={12}>
               <Form.Item name="gallery" label="Gallery" rules={[{ required: true, message: 'Vui lòng chọn ảnh' }]}>
                 <Upload
@@ -402,7 +411,7 @@ const Product = () => {
                             method: 'POST',
                             headers: {
                               'Content-Type': 'application/json',
-                              Authorization: `Bearer ${token}`,
+                              Authorization: `Bearer ${token}`
                             },
                             body: JSON.stringify({ path }),
                           }
