@@ -1,9 +1,28 @@
 import React, { useState, useEffect, useRef } from 'react';
 import {
-  Table, Typography, Input, Button, Space, message,
-  Row, Col, Tag, Modal, Form, Select, Upload, Image
+  Table,
+  Typography,
+  Input,
+  Button,
+  Space,
+  message,
+  Row,
+  Col,
+  Tag,
+  Modal,
+  Form,
+  Select,
+  Upload,
+  Image,
+  InputNumber
 } from 'antd';
-import { EditOutlined, DeleteOutlined, PlusOutlined } from '@ant-design/icons';
+import {
+  EditOutlined,
+  DeleteOutlined,
+  PlusOutlined,
+  ReloadOutlined
+} from '@ant-design/icons';
+import axios from 'axios';
 import VariantTable from './table/VariantTable';
 
 const { Title } = Typography;
@@ -13,6 +32,7 @@ const Product = () => {
   const [searchText, setSearchText] = useState('');
   const [data, setData] = useState([]);
   const [categories, setCategories] = useState([]);
+  const [brands, setBrands] = useState([]);
   const [loading, setLoading] = useState(false);
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [productForm] = Form.useForm();
@@ -23,17 +43,18 @@ const Product = () => {
 
   const token = localStorage.getItem('accessToken');
   const hasFetched = useRef(false);
+  const baseURL = process.env.REACT_APP_ADMIN_INSIGHT_URL;
 
-  const fetchProduct = async (nameSearch = '') => {
+  const api = axios.create({
+    baseURL,
+    headers: { Authorization: `Bearer ${token}` },
+  });
+
+  const fetchProducts = async (nameSearch = '') => {
     setLoading(true);
     try {
-      const res = await fetch(
-        `${process.env.REACT_APP_ADMIN_INSIGHT_URL}/api/v1/admin/product/form${nameSearch ? `?name=${nameSearch}` : ''}`,
-        { headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` } }
-      );
-      if (!res.ok) throw new Error('Không thể tải danh sách');
-      const dataRes = await res.json();
-      const product = dataRes?.data?.items ?? [];
+      const res = await api.get(`/api/v1/admin/product/form${nameSearch ? `?name=${nameSearch}` : ''}`);
+      const product = res?.data?.data?.items ?? [];
       setData(product.map(p => ({
         key: p.id,
         name: p.name,
@@ -43,14 +64,17 @@ const Product = () => {
         status: p.status,
         gallery: p.gallery,
         sku: p.sku,
+        barcode: p.barcode,
         price: p.price,
         cost: p.cost,
         discount: p.discount,
         stock: p.stock,
         weight: p.weight,
+        brand_id: p.brand_id,
+        brand_name: p.brand_name
       })));
     } catch (err) {
-      message.error(err.message);
+      message.error(err.message || 'Không thể tải danh sách');
     } finally {
       setLoading(false);
     }
@@ -59,17 +83,44 @@ const Product = () => {
   useEffect(() => {
     if (hasFetched.current) return;
     hasFetched.current = true;
-    fetchProduct();
+    fetchProducts();
   }, []);
 
-  const handleSearch = () => fetchProduct(searchText);
+  const handleSearch = () => fetchProducts(searchText);
+
+  const generateCode = (length = 12) => {
+    return Array.from({ length }, () => Math.floor(Math.random() * 10)).join('');
+  };
+
+  const fetchCategories = async () => {
+    try {
+      const res = await api.get(`/api/v1/admin/category/form`);
+      setCategories(res?.data?.data?.items || []);
+    } catch (err) {
+      message.error(err.message || 'Không thể tải danh mục');
+    }
+  };
+
+  const fetchBrands = async () => {
+    try {
+      const res = await api.get(`/api/v1/admin/brand/form`);
+      setBrands(res?.data?.data?.items || []);
+    } catch (err) {
+      message.error(err.message || 'Không thể tải nhãn hiệu');
+    }
+  };
 
   const handleCreate = async () => {
     setEditingProduct(null);
     productForm.resetFields();
     setThumbnailList([]);
     setGalleryList([]);
+    productForm.setFieldsValue({
+      sku: generateCode(8),
+      barcode: generateCode(12),
+    });
     await fetchCategories();
+    await fetchBrands();
     setIsModalVisible(true);
   };
 
@@ -77,37 +128,31 @@ const Product = () => {
     try {
       setLoading(true);
       await fetchCategories();
-      const res = await fetch(
-        `${process.env.REACT_APP_ADMIN_INSIGHT_URL}/api/v1/admin/product/form/view?id=${record.key}`,
-        { headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` } }
-      );
-      const data = await res.json();
-      if (!res.ok || !data) throw new Error(data?.data?.message || 'Cannot fetch data');
-
-      const product = data?.data || {};
-
+      await fetchBrands();
+      const res = await api.get(`/api/v1/admin/product/form/view`, { params: { id: record.key } });
+      const product = res?.data?.data || {};
       productForm.setFieldsValue({
         name: product.name,
-        thumbnail: product.thumbnail,
+        sku: product.sku,
+        barcode: product.barcode,
         slug: product.slug,
         description: product.description,
         status: product.status,
         gallery: product.gallery,
-        sku: product.sku,
         price: product.price,
         cost: product.cost,
         discount: product.discount,
         stock: product.stock,
         weight: product.weight,
         category_id: product.category_id,
+        brand_id: product.brand_id,
+        thumbnail: product.thumbnail,
       });
-
       setThumbnailList(
         product.thumbnail
           ? [{ uid: '-1', name: 'thumb.jpg', status: 'done', url: product.thumbnail }]
           : []
       );
-
       setGalleryList(
         (product.gallery || []).map((img, i) => ({
           uid: String(i),
@@ -117,11 +162,10 @@ const Product = () => {
           response: { data: img },
         }))
       );
-
       setEditingProduct(product.id);
       setIsModalVisible(true);
     } catch (err) {
-      message.error(err.message);
+      message.error(err.message || 'Không thể lấy dữ liệu');
     } finally {
       setLoading(false);
     }
@@ -130,41 +174,40 @@ const Product = () => {
   const handleModalOk = async () => {
     try {
       const values = await productForm.validateFields();
-      setLoading(true);
-      let url = '';
-      if (editingProduct) {
-        url = `${process.env.REACT_APP_ADMIN_INSIGHT_URL}/api/v1/admin/product/form/update`;
-        values.id = editingProduct;
-      } else {
-        url = `${process.env.REACT_APP_ADMIN_INSIGHT_URL}/api/v1/admin/product/form/create`;
+
+      if (values.discount !== undefined && values.discount !== null) {
+        values.discount = values.discount.toString();
       }
 
-      const res = await fetch(url, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify(values),
-      });
-      const dataRes = await res.json();
+      setLoading(true);
+      let url = editingProduct
+        ? '/api/v1/admin/product/form/update'
+        : '/api/v1/admin/product/form/create';
 
-      if (!res.ok || !dataRes.status) {
+      if (editingProduct) values.id = editingProduct;
+
+      const res = await api.post(url, values);
+      const dataRes = res.data;
+
+      if (!dataRes.status) {
         if (dataRes.data && typeof dataRes.data === 'object') {
           Object.entries(dataRes.data).forEach(([field, errors]) => {
             if (Array.isArray(errors)) errors.forEach(errMsg => message.error(`${field}: ${errMsg}`));
           });
         } else {
-          message.error(dataRes.messages || 'Operation failed');
+          message.error(dataRes.messages || 'Thao tác thất bại');
         }
         return;
       }
-      message.success(editingProduct ? 'Updated successfully' : 'Created successfully');
+      message.success(editingProduct ? 'Cập nhật thành công' : 'Tạo mới thành công');
       setIsModalVisible(false);
       productForm.resetFields();
       setEditingProduct(null);
       setThumbnailList([]);
       setGalleryList([]);
-      fetchProduct();
+      fetchProducts();
     } catch (err) {
-      message.error(err.message || 'Validate Failed');
+      message.error(err.message || 'Lỗi xác thực');
     } finally {
       setLoading(false);
     }
@@ -173,21 +216,12 @@ const Product = () => {
   const handleDelete = async (id) => {
     try {
       setLoading(true);
-      const res = await fetch(
-        `${process.env.REACT_APP_ADMIN_INSIGHT_URL}/api/v1/admin/product/form/delete`,
-        {
-          method: 'POST',
-          body: JSON.stringify({ id }),
-          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        }
-      );
-      const dataRes = await res.json();
-      if (!res.ok || !dataRes) throw new Error(dataRes?.message || 'Failed to delete');
-
+      const res = await api.post(`/api/v1/admin/product/form/delete`, { id });
+      if (!res.data) throw new Error('Xóa thất bại');
       setData(prev => prev.filter(item => item.key !== id));
-      message.success('Deleted successfully');
+      message.success('Đã xóa thành công');
     } catch (err) {
-      message.error(err.message || 'Delete failed');
+      message.error(err.message || 'Xóa thất bại');
     } finally {
       setLoading(false);
     }
@@ -195,50 +229,47 @@ const Product = () => {
 
   const showDeleteConfirm = (record) => {
     confirm({
-      title: 'Are you sure you want to delete this?',
-      content: `name: ${record.username}`,
-      okText: 'Confirm',
+      title: 'Bạn có chắc muốn xóa?',
+      content: `Tên sản phẩm: ${record.name}`,
+      okText: 'Xác nhận',
       okType: 'danger',
-      cancelText: 'Cancel',
+      cancelText: 'Hủy',
       onOk() { return handleDelete(record.key); },
     });
   };
 
-  const fetchCategories = async () => {
-    try {
-      const res = await fetch(
-        `${process.env.REACT_APP_ADMIN_INSIGHT_URL}/api/v1/admin/category/form`,
-        { headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` } }
-      );
-      if (!res.ok) throw new Error('Không thể tải danh sách category');
-      const data = await res.json();
-      setCategories(data?.data?.items || []);
-    } catch (err) {
-      message.error(err.message);
-    }
+  const handleModalCancel = () => {
+    setIsModalVisible(false);
+    productForm.resetFields();
+    setEditingProduct(null);
+    setThumbnailList([]);
+    setGalleryList([]);
   };
 
   const columns = [
-    { title: 'Name', dataIndex: 'name', sorter: (a, b) => a.name.localeCompare(b.name) },
-    { title: 'Sku', dataIndex: 'sku', sorter: (a, b) => a.sku.localeCompare(b.sku) },
+    { title: 'Tên', dataIndex: 'name', sorter: (a, b) => a.name.localeCompare(b.name) },
+    { title: 'SKU', dataIndex: 'sku' },
+    { title: 'Mã vạch', dataIndex: 'barcode' },
     {
-      title: 'Image',
+      title: 'Ảnh',
       dataIndex: 'thumbnail',
       render: url =>
         url ? <Image src={url} alt="thumbnail" width={80} height={80} style={{ objectFit: 'cover' }} preview={false} /> : '—',
     },
+    { title: 'Nhãn hiệu', dataIndex: 'brand_name' },
     { title: 'Slug', dataIndex: 'slug' },
-    { title: 'Price', dataIndex: 'price' },
-    { title: 'Cost', dataIndex: 'cost' },
-    { title: 'Stock', dataIndex: 'stock' },
-    { title: 'Description', dataIndex: 'description' },
+    { title: 'Giá', dataIndex: 'price', render: val => val?.toLocaleString('vi-VN') },
+    { title: 'Giá vốn', dataIndex: 'cost', render: val => val?.toLocaleString('vi-VN') },
+    { title: 'Giảm giá (%)', dataIndex: 'discount', render: val => val || 0 },
+    { title: 'Tồn kho', dataIndex: 'stock' },
+    { title: 'Mô tả', dataIndex: 'description' },
     {
-      title: 'Status',
+      title: 'Trạng thái',
       dataIndex: 'status',
-      render: value => value === 1 ? <Tag color="green">Active</Tag> : <Tag color="red">Inactive</Tag>
+      render: value => value === 1 ? <Tag color="green">Hoạt động</Tag> : <Tag color="red">Ẩn</Tag>
     },
     {
-      title: 'Actions',
+      title: 'Thao tác',
       key: 'actions',
       render: (_, record) => (
         <Space size="middle">
@@ -252,90 +283,203 @@ const Product = () => {
   return (
     <div style={{ padding: 24 }}>
       <Row justify="space-between" align="middle" style={{ marginBottom: 24 }}>
-        <Col><Title level={2}>Product</Title></Col>
+        <Col><Title level={2}>Sản phẩm</Title></Col>
         <Col>
           <Space>
             <Input
-              placeholder="Search by name"
+              placeholder="Tìm theo tên"
               value={searchText}
               onChange={(e) => setSearchText(e.target.value)}
               style={{ width: 200 }}
             />
-            <Button type="primary" onClick={handleSearch}>Filter</Button>
-            <Button type="primary" onClick={handleCreate}>Create</Button>
+            <Button type="primary" onClick={handleSearch}>Lọc</Button>
+            <Button type="primary" onClick={handleCreate}>Tạo mới</Button>
           </Space>
         </Col>
       </Row>
 
       <Table
-  columns={columns}
-  dataSource={data}
-  loading={loading}
-  expandable={{
-    expandedRowRender: (record) => (
-      <VariantTable productId={record.key} />
-    ),
-    rowExpandable: () => true,
-  }}
+        columns={columns}
+        dataSource={data}
+        loading={loading}
+        expandable={{
+          expandedRowRender: (record) => (
+            <VariantTable
+              productId={record.key}
+              productName={record.name}
+            />
+          ),
+          rowExpandable: () => true,
+        }}
       />
 
       <Modal
-        title={editingProduct ? 'Edit' : 'Create'}
+        className="product-modal"
         open={isModalVisible}
-        onCancel={() => {
-          setIsModalVisible(false);
-          productForm.resetFields();
-          setEditingProduct(null);
-          setThumbnailList([]);
-          setGalleryList([]);
-        }}
+        width="90vw"
+        style={{ maxWidth: '1200px', overflowX: 'hidden' }}
+        bodyStyle={{ maxHeight: '80vh', overflowY: 'auto', overflowX: 'hidden', paddingRight: 24 }}
+        onCancel={handleModalCancel}
         onOk={handleModalOk}
-        okText={editingProduct ? 'Update' : 'Create'}
-        width={900}
       >
-        <Form form={productForm} layout="vertical">
-          <Row gutter={16}>
-            <Col span={12}><Form.Item name="name" label="Name" rules={[{ required: true }]}><Input /></Form.Item></Col>
-            <Col span={12}><Form.Item name="sku" label="Sku" rules={[{ required: true }]}><Input /></Form.Item></Col>
-          </Row>
-          <Row gutter={16}>
-            <Col span={12}><Form.Item name="slug" label="Slug"><Input /></Form.Item></Col>
-            <Col span={12}><Form.Item name="discount" label="Discount"><Input /></Form.Item></Col>
-          </Row>
-          <Row gutter={16}>
-            <Col span={12}><Form.Item name="price" label="Price" rules={[{ required: true }]}><Input /></Form.Item></Col>
-            <Col span={12}><Form.Item name="cost" label="Cost" rules={[{ required: true }]}><Input /></Form.Item></Col>
-          </Row>
-          <Row gutter={16}>
-            <Col span={12}><Form.Item name="stock" label="Stock" rules={[{ required: true }]}><Input /></Form.Item></Col>
+        <Form form={productForm} layout="vertical" style={{ width: '100%' }}>
+          <Row gutter={[24, 16]}>
             <Col span={12}>
-              <Form.Item name="status" label="Status" rules={[{ required: true, message: 'Select status' }]}>
-                <Select placeholder="Select status">
-                  <Select.Option value={1}>Active</Select.Option>
-                  <Select.Option value={2}>Inactive</Select.Option>
+              <Form.Item
+                name="name"
+                label="Tên sản phẩm"
+                rules={[{ required: true, message: 'Nhập tên sản phẩm' }]}
+              >
+                <Input placeholder="VD: Laptop Dell XPS 13..." />
+              </Form.Item>
+            </Col>
+            <Col span={6}>
+              <Form.Item
+                name="sku"
+                label="SKU"
+                rules={[{ required: true, message: 'Nhập hoặc random SKU' }]}
+              >
+                <Input
+                  placeholder="Tự động / Nhập thủ công"
+                  addonAfter={
+                    <Button
+                      icon={<ReloadOutlined />}
+                      size="small"
+                      onClick={() => productForm.setFieldsValue({ sku: generateCode(8) })}
+                    />
+                  }
+                />
+              </Form.Item>
+            </Col>
+            <Col span={6}>
+              <Form.Item
+                name="barcode"
+                label="Mã vạch"
+                rules={[{ required: true, message: 'Nhập hoặc random mã vạch' }]}
+              >
+                <Input
+                  placeholder="Tự động / Nhập thủ công"
+                  addonAfter={
+                    <Button
+                      icon={<ReloadOutlined />}
+                      size="small"
+                      onClick={() => productForm.setFieldsValue({ barcode: generateCode(12) })}
+                    />
+                  }
+                />
+              </Form.Item>
+            </Col>
+          </Row>
+
+          <Row gutter={[24, 16]}>
+            <Col span={8}>
+              <Form.Item name="slug" label="Slug">
+                <Input placeholder="slug-tuy-chinh" />
+              </Form.Item>
+            </Col>
+            <Col span={8}>
+              <Form.Item
+                name="price"
+                label="Giá bán (VNĐ)"
+                rules={[{ required: true }]}
+              >
+                <InputNumber
+                  style={{ width: '100%' }}
+                  formatter={value => value ? value.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.') : ''}
+                  parser={value => value ? value.replace(/\./g, '') : ''}
+                  placeholder="1.000.000"
+                />
+              </Form.Item>
+            </Col>
+            <Col span={8}>
+              <Form.Item
+                name="cost"
+                label="Giá vốn (VNĐ)"
+                rules={[{ required: true }]}
+              >
+                <InputNumber
+                  style={{ width: '100%' }}
+                  formatter={value => value ? value.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.') : ''}
+                  parser={value => value ? value.replace(/\./g, '') : ''}
+                  placeholder="500.000"
+                />
+              </Form.Item>
+            </Col>
+          </Row>
+
+          <Row gutter={[24, 16]}>
+            <Col span={8}>
+              <Form.Item
+                name="discount"
+                label="Giảm giá (%)"
+              >
+                <InputNumber
+                  style={{ width: '100%' }}
+                  min={0}
+                  max={100}
+                  formatter={value => value ? value.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.') : ''}
+                  parser={value => value ? value.replace(/\./g, '') : ''}
+                />
+              </Form.Item>
+            </Col>
+            <Col span={8}>
+              <Form.Item
+                name="stock"
+                label="Tồn kho"
+                rules={[{ required: true }]}
+              >
+                <InputNumber style={{ width: '100%' }} min={0} />
+              </Form.Item>
+            </Col>
+            <Col span={8}>
+              <Form.Item
+                name="status"
+                label="Trạng thái"
+                rules={[{ required: true }]}
+              >
+                <Select placeholder="Chọn trạng thái">
+                  <Select.Option value={1}>Đang bán</Select.Option>
+                  <Select.Option value={2}>Ngừng bán</Select.Option>
                 </Select>
               </Form.Item>
             </Col>
           </Row>
-          <Row gutter={16}>
+
+          <Row gutter={[24, 16]}>
             <Col span={12}>
               <Form.Item
                 name="category_id"
-                label="Category"
-                rules={[{ required: true, message: 'Select category' }]}
+                label="Danh mục"
+                rules={[{ required: true }]}
               >
-                <Select placeholder="Select category" loading={!categories.length} allowClear>
+                <Select placeholder="Chọn danh mục" loading={!categories.length} allowClear>
                   {categories.map(cat => (
                     <Select.Option key={cat.id} value={cat.id}>{cat.name}</Select.Option>
                   ))}
                 </Select>
               </Form.Item>
             </Col>
+            <Col span={12}>
+              <Form.Item
+                name="brand_id"
+                label="Nhãn hiệu"
+              >
+                <Select placeholder="Chọn nhãn hiệu" loading={!brands.length} allowClear>
+                  {brands.map(brand => (
+                    <Select.Option key={brand.id} value={brand.id}>{brand.name}</Select.Option>
+                  ))}
+                </Select>
+              </Form.Item>
+            </Col>
           </Row>
 
-          <Row gutter={16}>
+          <Row gutter={[24, 16]}>
             <Col span={12}>
-              <Form.Item name="thumbnail" label="Thumbnail" rules={[{ required: true, message: 'Vui lòng chọn ảnh' }]}>
+              <Form.Item
+                name="thumbnail"
+                label="Ảnh đại diện"
+                rules={[{ required: true, message: 'Vui lòng chọn ảnh' }]}
+              >
                 <Upload
                   name="file"
                   listType="picture-card"
@@ -352,27 +496,6 @@ const Product = () => {
                       productForm.setFieldsValue({ thumbnail: url, thumbnail_path: path });
                     }
                   }}
-                  onRemove={async (file) => {
-                    try {
-                      const path = file.response?.data?.path;
-                      if (path) {
-                        await fetch(
-                          `${process.env.REACT_APP_ADMIN_INSIGHT_URL}/api/v1/general/upload/delete`,
-                          {
-                            method: 'POST',
-                            headers: {
-                              'Content-Type': 'application/json',
-                              Authorization: `Bearer ${token}`,
-                            },
-                            body: JSON.stringify({ path }),
-                          }
-                        );
-                        productForm.setFieldsValue({ thumbnail: null, thumbnail_path: null });
-                      }
-                    } catch {
-                      message.error('Xoá ảnh thất bại');
-                    }
-                  }}
                 >
                   {thumbnailList.length < 1 && (
                     <div>
@@ -383,9 +506,12 @@ const Product = () => {
                 </Upload>
               </Form.Item>
             </Col>
-
             <Col span={12}>
-              <Form.Item name="gallery" label="Gallery" rules={[{ required: true, message: 'Vui lòng chọn ảnh' }]}>
+              <Form.Item
+                name="gallery"
+                label="Bộ sưu tập"
+                rules={[{ required: true, message: 'Vui lòng chọn ảnh' }]}
+              >
                 <Upload
                   name="file"
                   listType="picture-card"
@@ -398,32 +524,8 @@ const Product = () => {
                     setGalleryList(fileList);
                     const imgs = fileList
                       .filter(f => f.status === 'done')
-                      .map(f => f.response?.data || { url: f.url, path: f.response?.data?.path });
+                      .map(f => f.response?.data || { url: f.url });
                     productForm.setFieldsValue({ gallery: imgs });
-                  }}
-                  onRemove={async (file) => {
-                    try {
-                      const path = file.response?.data?.path;
-                      if (path) {
-                        await fetch(
-                          `${process.env.REACT_APP_ADMIN_INSIGHT_URL}/api/v1/general/upload/delete`,
-                          {
-                            method: 'POST',
-                            headers: {
-                              'Content-Type': 'application/json',
-                              Authorization: `Bearer ${token}`
-                            },
-                            body: JSON.stringify({ path }),
-                          }
-                        );
-                        const images = productForm
-                          .getFieldValue('gallery')
-                          .filter(img => img.path !== path);
-                        productForm.setFieldsValue({ gallery: images });
-                      }
-                    } catch {
-                      message.error('Xoá ảnh thất bại');
-                    }
                   }}
                 >
                   <div>
@@ -435,13 +537,9 @@ const Product = () => {
             </Col>
           </Row>
 
-          <Row gutter={16}>
-            <Col span={24}>
-              <Form.Item name="description" label="Description">
-                <Input.TextArea rows={4} placeholder="Enter description..." showCount maxLength={500} />
-              </Form.Item>
-            </Col>
-          </Row>
+          <Form.Item name="description" label="Mô tả chi tiết">
+            <Input.TextArea rows={4} placeholder="Nhập mô tả sản phẩm..." showCount maxLength={500} />
+          </Form.Item>
         </Form>
       </Modal>
     </div>
