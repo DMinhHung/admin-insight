@@ -53,7 +53,9 @@ const App = () => {
     '/product-attribute': '4-2',
     '/product-variant': '4-3',
     '/customer': '5',
-    '/vendor': '6',
+    '/vendor': '6-1',
+    '/vendor': '6-2',
+    '/vendor': '6-3',
     '/invoice': '7',
     '/user': '8',
   };
@@ -147,13 +149,18 @@ const App = () => {
             {
               key: '6',
               icon: <UserSwitchOutlined style={{ fontSize: 20 }} />,
-              label: <Link to="/vendor">Nhà Cung Cấp</Link>,
+              label: <Link to="/vendor">Nhập Hàng</Link>,
               style: { marginBottom: 12 },
+              children: [
+                { key: '6-1', label: <Link to="/vendor">Nhà Cung Cấp</Link> },
+                { key: '6-1', label: <Link to="/nhap-hang">Nhập Hàng</Link> },
+                { key: '6-2', label: <Link to="/tra-hang-nhap">Trả Hàng Nhập</Link> },
+              ],
             },
             {
               key: '7',
               icon: <FileDoneOutlined style={{ fontSize: 20 }} />,
-              label: <Link to="/invoice">Hóa Đơn</Link>,
+              label: <Link to="/invoice">Kho Hàng</Link>,
               style: { marginBottom: 12 },
             },
             {

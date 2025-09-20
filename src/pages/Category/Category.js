@@ -213,6 +213,7 @@ const Category = () => {
         onOk={handleModalOk}
         okText={editingBrand ? 'Update' : 'Create'}
         width={900}
+        maskClosable={false}
       >
         <Form form={categoryForm} layout="vertical">
           <Row gutter={16}>

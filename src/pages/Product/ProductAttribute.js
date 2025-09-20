@@ -268,6 +268,7 @@ const ProductAttribute = () => {
         onOk={handleModalOk}
         okText={editingProduct ? 'Update' : 'Create'}
         width={900}
+        maskClosable={false}
       >
         <Form form={productForm} layout="vertical">
           <Row gutter={16}>

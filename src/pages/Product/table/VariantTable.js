@@ -320,6 +320,7 @@ const VariantTable = ({ productId, productName }) => {
         width="90vw"
         style={{ maxWidth: '1200px' }}
         bodyStyle={{ maxHeight: '80vh', overflowY: 'auto', paddingRight: 24 }}
+        maskClosable={false}
       >
         <Form form={form} layout="vertical" style={{ width: '100%' }}>
           <Form.Item name="thumbnail" hidden>

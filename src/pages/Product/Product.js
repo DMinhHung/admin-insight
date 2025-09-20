@@ -321,6 +321,7 @@ const Product = () => {
         bodyStyle={{ maxHeight: '80vh', overflowY: 'auto', overflowX: 'hidden', paddingRight: 24 }}
         onCancel={handleModalCancel}
         onOk={handleModalOk}
+        maskClosable={false}
       >
         <Form form={productForm} layout="vertical" style={{ width: '100%' }}>
           <Row gutter={[24, 16]}>

@@ -7,7 +7,7 @@ const { Title } = Typography;
 const { confirm } = Modal;
 const { Option } = Select;
 
-const Customers = () => {
+const Vendor = () => {
     const [searchText, setSearchText] = useState('');
     const [data, setData] = useState([]);
     const [loading, setLoading] = useState(false);
@@ -169,7 +169,7 @@ const Customers = () => {
     return (
         <div style={{ padding: 24 }}>
             <Row justify="space-between" align="middle" style={{ marginBottom: 24 }}>
-                <Col><Title level={2}>Khách Hàng</Title></Col>
+                <Col><Title level={2}>Nhà Cung Cấp</Title></Col>
                 <Col>
                     <Space>
                         <Input
@@ -197,8 +197,8 @@ const Customers = () => {
             >
                 <Form form={customerForm} layout="vertical" style={{ width: '100%' }}>
                     <Row gutter={16}>
-                        <Col span={12}><Form.Item name="name" label="Tên khách hàng" rules={[{ required: true }]}><Input /></Form.Item></Col>
-                        <Col span={12}><Form.Item name="code" label="Mã khách hàng" rules={[{ required: true }]}><Input
+                        <Col span={12}><Form.Item name="name" label="Tên nhà cung cấp" rules={[{ required: true }]}><Input /></Form.Item></Col>
+                        <Col span={12}><Form.Item name="code" label="Mã nhà cung cấp" rules={[{ required: true }]}><Input
                             placeholder="Tự động / Nhập thủ công"
                             addonAfter={
                                 <Button
@@ -211,43 +211,7 @@ const Customers = () => {
                     </Row>
                     <Row gutter={16}>
                         <Col span={8}><Form.Item name="phone" label="Điện thoại"><Input /></Form.Item></Col>
-                        <Col span={8}><Form.Item name="gender" label="Giới tính"><Select placeholder="Chọn giới tính"><Option value="male">Nam</Option><Option value="female">Nữ</Option></Select></Form.Item></Col>
                         <Col span={8}><Form.Item name="email" label="Email"><Input /></Form.Item></Col>
-                    </Row>
-                    <Row gutter={16}>
-                        <Col span={12}><Form.Item name="facebook" label="Facebook"><Input /></Form.Item></Col>
-                        <Col span={12}>
-                            <Form.Item name="thumbnail" label="Ảnh">
-                                <Upload
-                                    name="file"
-                                    listType="picture-card"
-                                    maxCount={1}
-                                    accept="image/*"
-                                    action={`${process.env.REACT_APP_ADMIN_INSIGHT_URL}/api/v1/general/upload/create`}
-                                    headers={{ Authorization: `Bearer ${token}` }}
-                                    onChange={({ file }) => {
-                                        if (file.status === 'done') {
-                                            const { url, path } = file.response?.data || {};
-                                            if (url && path) customerForm.setFieldsValue({ thumbnail: url, thumbnail_path: path });
-                                        } else if (file.status === 'error') message.error('Upload thất bại');
-                                    }}
-                                    onRemove={async (file) => {
-                                        try {
-                                            const path = file.response?.data?.path || customerForm.getFieldValue('thumbnail_path');
-                                            if (path) {
-                                                await api.post('/api/v1/general/upload/delete', { path });
-                                                customerForm.setFieldsValue({ thumbnail: null, thumbnail_path: null });
-                                            }
-                                        } catch { message.error('Xóa thất bại'); }
-                                    }}
-                                >
-                                    <div>
-                                        <PlusOutlined />
-                                        <div style={{ marginTop: 8 }}>Upload</div>
-                                    </div>
-                                </Upload>
-                            </Form.Item>
-                        </Col>
                     </Row>
 
                     <Card style={{ borderRadius: 8, border: "1px solid #f0f0f0", boxShadow: "0 2px 8px rgba(0,0,0,0.05)", marginBottom: 16 }}>
@@ -265,7 +229,7 @@ const Customers = () => {
 
                     <Card style={{ borderRadius: 8, border: "1px solid #f0f0f0", boxShadow: "0 2px 8px rgba(0,0,0,0.05)", marginBottom: 16 }}>
                         <Collapse ghost>
-                            <Collapse.Panel header="Nhóm khách hàng & ghi chú" key="2">
+                            <Collapse.Panel header="Nhóm nhà cung cấp & ghi chú" key="2">
                                 <Row gutter={16}>
                                     <Col span={12}><Form.Item name="customer_group" label="Nhóm khách hàng"><Input /></Form.Item></Col>
                                     <Col span={12}><Form.Item name="note" label="Ghi chú"><Input.TextArea rows={2} /></Form.Item></Col>
@@ -277,23 +241,9 @@ const Customers = () => {
                     <Card style={{ borderRadius: 8, border: "1px solid #f0f0f0", boxShadow: "0 2px 8px rgba(0,0,0,0.05)", marginBottom: 16 }}>
                         <Collapse ghost>
                             <Collapse.Panel header="Thông tin xuất hóa đơn" key="3">
-                                <Form.Item name="customer_type" label="Loại khách hàng">
-                                    <Radio.Group>
-                                        <Radio value="individual">Cá nhân</Radio>
-                                        <Radio value="organization">Tổ chức/Hộ kinh doanh</Radio>
-                                    </Radio.Group>
-                                </Form.Item>
                                 <Row gutter={16}>
                                     <Col span={12}><Form.Item name="tax_code" label="Mã số thuế"><Input /></Form.Item></Col>
                                     <Col span={12}><Form.Item name="company" label="Tên công ty"><Input /></Form.Item></Col>
-                                </Row>
-                                <Row gutter={16}>
-                                    <Col span={12}><Form.Item name="cccd" label="CCCD/CMND"><Input /></Form.Item></Col>
-                                    <Col span={12}><Form.Item name="passport" label="Số hộ chiếu"><Input /></Form.Item></Col>
-                                </Row>
-                                <Row gutter={16}>
-                                    <Col span={12}><Form.Item name="bank" label="Ngân hàng"><Input /></Form.Item></Col>
-                                    <Col span={12}><Form.Item name="bank_account" label="Số tài khoản"><Input /></Form.Item></Col>
                                 </Row>
                             </Collapse.Panel>
                         </Collapse>
@@ -304,4 +254,4 @@ const Customers = () => {
     );
 };
 
-export default Customers;
+export default Vendor;
