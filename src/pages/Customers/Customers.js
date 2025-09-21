@@ -113,6 +113,7 @@ const Customers = () => {
         hasFetched.current = true;
         fetchCustomers();
         fetchGroups();
+        fetchCities();
     }, []);
 
     const handleSearch = () => fetchCustomers(searchText);
@@ -190,6 +191,10 @@ const Customers = () => {
         }
     };
 
+
+    const defaultVisible = ['code', 'name', 'phone', 'email', 'gender', 'actions'];
+    const [visibleColumns, setVisibleColumns] = useState(defaultVisible);
+
     const columns = [
         { title: 'Mã KH', dataIndex: 'code', key: 'code', sorter: (a, b) => a.code.localeCompare(b.code) },
         { title: 'Tên', dataIndex: 'name', key: 'name', sorter: (a, b) => a.name.localeCompare(b.name) },
@@ -217,11 +222,6 @@ const Customers = () => {
             ),
         },
     ];
-
-    const [visibleColumns, setVisibleColumns] = useState(
-        columns.map(c => c.dataIndex || c.key)
-    );
-
 
     return (
         <div style={{ padding: 24 }}>
@@ -253,7 +253,7 @@ const Customers = () => {
                 </Col>
             </Row>
 
-            <Table   columns={columns.filter(c => visibleColumns.includes(c.dataIndex || c.key))} dataSource={data} loading={loading} />
+            <Table columns={columns.filter(c => visibleColumns.includes(c.dataIndex || c.key))} dataSource={data} loading={loading} />
 
             <Modal
                 open={isModalVisible}

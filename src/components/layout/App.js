@@ -52,20 +52,15 @@ const App = () => {
     '/product': '4-1',
     '/product-attribute': '4-2',
     '/product-variant': '4-3',
-
     '/customer': '5-1',
     '/group-customer': '5-2',
-
     '/vendor': '6-1',
-    '/nhap-hang': '6-2',
-    '/tra-hang-nhap': '6-3',
-
+    '/group-vendor': '6-2',
     '/invoice': '7',
-
     '/xuat-nhap-kho': '7-1',
     '/kiem-ke-kho': '7-2',
-
     '/user': '8',
+    '/staff': '9',
   };
 
   const menuItems = [
@@ -167,19 +162,18 @@ const App = () => {
               label: 'Khách Hàng',
               style: { marginBottom: 12 },
               children: [
-                { key: '5-1', label: <Link to="/customer">Khách Hàng</Link> },
+                { key: '5-1', label: <Link to="/customer">Danh Sách</Link> },
                 { key: '5-2', label: <Link to="/group-customer">Nhóm Khách Hàng</Link> },
               ],
             },
             {
               key: '6',
               icon: <UserSwitchOutlined style={{ fontSize: 20 }} />,
-              label: 'Nhập Hàng',
+              label: 'Nhà Cung Cấp',
               style: { marginBottom: 12 },
               children: [
-                { key: '6-1', label: <Link to="/vendor">Nhà Cung Cấp</Link> },
-                { key: '6-2', label: <Link to="/nhap-hang">Nhập Hàng</Link> },
-                { key: '6-3', label: <Link to="/tra-hang-nhap">Trả Hàng Nhập</Link> },
+                { key: '6-1', label: <Link to="/vendor">Danh Sách</Link> },
+                { key: '6-2', label: <Link to="/group-vendor">Nhóm Nhà Cung Cấp</Link> },
               ],
             },
             {
@@ -188,14 +182,22 @@ const App = () => {
               label: 'Kho Hàng',
               style: { marginBottom: 12 },
               children: [
-                { key: '7-1', label: <Link to="/xuat-nhap-kho">Xuất Nhập Kho</Link> },
-                { key: '7-2', label: <Link to="/kiem-ke-kho">Kiểm Kê Kho</Link> },
+                { key: '7-1', label: <Link to="/xuat-nhap-kho">Nhập Kho</Link> },
+                { key: '7-2', label: <Link to="/xuat-nhap-kho">Xuất Kho</Link> },
+                { key: '7-3', label: <Link to="/xuat-nhap-kho">Xuất Trả Hàng</Link> },
+                { key: '7-4', label: <Link to="/kiem-ke-kho">Kiểm Kê Kho</Link> },
               ],
             },
             {
               key: '8',
               icon: <UserOutlined style={{ fontSize: 20 }} />,
               label: <Link to="/user">Quản Lý Người Dùng</Link>,
+              style: { marginBottom: 12 },
+            },
+             {
+              key: '9',
+              icon: <UserOutlined style={{ fontSize: 20 }} />,
+              label: <Link to="/user">NHân Viên</Link>,
               style: { marginBottom: 12 },
             },
             {

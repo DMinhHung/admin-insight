@@ -14,6 +14,7 @@ import ProductAttribute from "../pages/Product/ProductAttribute";
 import ProductVariant from "../pages/Product/ProductVariant";
 import Vendor from "../pages/Vendor/Vendor";
 import GroupCustomer from "../pages/Customers/GroupCustomer";
+import GroupVendor from "../pages/Vendor/GroupVendor";
 
 const AppRoutes = () => {
     const token = localStorage.getItem("accessToken");
@@ -32,6 +33,7 @@ const AppRoutes = () => {
         <Route path="customer" element={<Customers />} />
         <Route path="group-customer" element={<GroupCustomer />} />
         <Route path="vendor" element={<Vendor />} />
+        <Route path="group-vendor" element={<GroupVendor />} />
         <Route path="staffs" element={<Staffs />} />
       </Route>
       <Route path="*"element={token ? <Navigate to="/dashboard" replace /> : <Navigate to="/login" replace />}/>
