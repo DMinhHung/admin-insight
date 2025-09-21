@@ -1,4 +1,4 @@
-import React, { useState, Suspense, useEffect } from 'react';
+import React, { useState, Suspense } from 'react';
 import {
   MenuFoldOutlined,
   MenuUnfoldOutlined,
@@ -41,27 +41,29 @@ const App = () => {
   const location = useLocation();
 
   const handleLogout = () => {
-    console.log("User logged out");
     navigate("/login");
   };
 
-  const pathKeyMap = {
-    '/dashboard': '1',
-    '/brand': '2',
-    '/category': '3',
-    '/product': '4-1',
-    '/product-attribute': '4-2',
-    '/product-variant': '4-3',
-    '/customer': '5-1',
-    '/group-customer': '5-2',
-    '/vendor': '6-1',
-    '/group-vendor': '6-2',
-    '/invoice': '7',
-    '/xuat-nhap-kho': '7-1',
-    '/kiem-ke-kho': '7-2',
-    '/user': '8',
-    '/staff': '9',
+  // Hàm lấy selectedKey và openKeys dựa trên pathname
+  const getMenuKeys = (pathname) => {
+    if (pathname.startsWith('/dashboard')) return { selectedKey: '1', openKeys: [] };
+    if (pathname.startsWith('/brand')) return { selectedKey: '2', openKeys: [] };
+    if (pathname.startsWith('/category')) return { selectedKey: '3', openKeys: [] };
+    if (pathname.startsWith('/product')) return { selectedKey: '4-1', openKeys: ['4'] };
+    if (pathname.startsWith('/product-attribute')) return { selectedKey: '4-2', openKeys: ['4'] };
+    if (pathname.startsWith('/customer')) return { selectedKey: '5-1', openKeys: ['5'] };
+    if (pathname.startsWith('/group-customer')) return { selectedKey: '5-2', openKeys: ['5'] };
+    if (pathname.startsWith('/vendor')) return { selectedKey: '6-1', openKeys: ['6'] };
+    if (pathname.startsWith('/group-vendor')) return { selectedKey: '6-2', openKeys: ['6'] };
+    if (pathname.startsWith('/warehouse')) return { selectedKey: '7-1', openKeys: ['7'] };
+    if (pathname.startsWith('/stock-invoice')) return { selectedKey: '7-2', openKeys: ['7'] };
+    if (pathname.startsWith('/check-invoice')) return { selectedKey: '7-3', openKeys: ['7'] };
+    if (pathname.startsWith('/user')) return { selectedKey: '8', openKeys: [] };
+    return { selectedKey: '1', openKeys: [] };
   };
+
+  const { selectedKey, openKeys: defaultOpenKeys } = getMenuKeys(location.pathname);
+  const [openKeys, setOpenKeys] = useState(defaultOpenKeys);
 
   const menuItems = [
     {
@@ -77,27 +79,6 @@ const App = () => {
     'New order received',
     'Server downtime alert',
   ];
-
-  const [openKeys, setOpenKeys] = useState([]);
-
-  useEffect(() => {
-    if (location.pathname.startsWith('/product')) {
-      setOpenKeys(['4']);
-    } else if (location.pathname.startsWith('/customer') || location.pathname.startsWith('/group-customer')) {
-      setOpenKeys(['5']);
-    } else if (
-      location.pathname.startsWith('/vendor') ||
-      location.pathname.startsWith('/nhap-hang') ||
-      location.pathname.startsWith('/tra-hang-nhap')
-    ) {
-      setOpenKeys(['6']);
-    } else if (
-      location.pathname.startsWith('/xuat-nhap-kho') ||
-      location.pathname.startsWith('/kiem-ke-kho')
-    ) {
-      setOpenKeys(['7']);
-    }
-  }, [location.pathname]);
 
   return (
     <Layout style={{ minHeight: '100vh' }}>
@@ -123,7 +104,7 @@ const App = () => {
 
         <Menu
           mode="inline"
-          selectedKeys={[pathKeyMap[location.pathname] || '1']}
+          selectedKeys={[selectedKey]}
           openKeys={openKeys}
           onOpenChange={setOpenKeys}
           style={{ fontSize: 16, marginTop: 50 }}
@@ -132,25 +113,21 @@ const App = () => {
               key: '1',
               icon: <RiseOutlined style={{ fontSize: 20 }} />,
               label: <Link to="/dashboard">Dashboard</Link>,
-              style: { marginBottom: 12 },
             },
             {
               key: '2',
               icon: <BlockOutlined style={{ fontSize: 20 }} />,
               label: <Link to="/brand">Thương Hiệu</Link>,
-              style: { marginBottom: 12 },
             },
             {
               key: '3',
               icon: <ApartmentOutlined style={{ fontSize: 20 }} />,
               label: <Link to="/category">Danh Mục</Link>,
-              style: { marginBottom: 12 },
             },
             {
               key: '4',
               icon: <ProductOutlined style={{ fontSize: 20 }} />,
               label: 'Sản Phẩm',
-              style: { marginBottom: 12 },
               children: [
                 { key: '4-1', label: <Link to="/product">Sản Phẩm</Link> },
                 { key: '4-2', label: <Link to="/product-attribute">Thuộc Tính</Link> },
@@ -160,7 +137,6 @@ const App = () => {
               key: '5',
               icon: <UsergroupAddOutlined style={{ fontSize: 20 }} />,
               label: 'Khách Hàng',
-              style: { marginBottom: 12 },
               children: [
                 { key: '5-1', label: <Link to="/customer">Danh Sách</Link> },
                 { key: '5-2', label: <Link to="/group-customer">Nhóm Khách Hàng</Link> },
@@ -170,7 +146,6 @@ const App = () => {
               key: '6',
               icon: <UserSwitchOutlined style={{ fontSize: 20 }} />,
               label: 'Nhà Cung Cấp',
-              style: { marginBottom: 12 },
               children: [
                 { key: '6-1', label: <Link to="/vendor">Danh Sách</Link> },
                 { key: '6-2', label: <Link to="/group-vendor">Nhóm Nhà Cung Cấp</Link> },
@@ -180,25 +155,21 @@ const App = () => {
               key: '7',
               icon: <FileDoneOutlined style={{ fontSize: 20 }} />,
               label: 'Kho Hàng',
-              style: { marginBottom: 12 },
               children: [
-                { key: '7-1', label: <Link to="/xuat-nhap-kho">Nhập Kho</Link> },
-                { key: '7-2', label: <Link to="/xuat-nhap-kho">Xuất Kho</Link> },
-                { key: '7-3', label: <Link to="/xuat-nhap-kho">Xuất Trả Hàng</Link> },
-                { key: '7-4', label: <Link to="/kiem-ke-kho">Kiểm Kê Kho</Link> },
+                { key: '7-1', label: <Link to="/warehouse">Kho</Link> },
+                { key: '7-2', label: <Link to="/stock-invoice">Xuất Nhập Hủy Kho</Link> },
+                { key: '7-3', label: <Link to="/check-invoice">Kiểm Kê Kho</Link> },
               ],
             },
             {
               key: '8',
               icon: <UserOutlined style={{ fontSize: 20 }} />,
               label: <Link to="/user">Quản Lý Nhân Viên</Link>,
-              style: { marginBottom: 12 },
             },
             {
               key: '9',
               icon: <SettingOutlined style={{ fontSize: 20 }} />,
               label: 'Setting',
-              style: { marginBottom: 12 },
               disabled: true,
             },
           ]}
