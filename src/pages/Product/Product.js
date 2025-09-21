@@ -14,16 +14,20 @@ import {
   Select,
   Upload,
   Image,
-  InputNumber
+  InputNumber,
+  Dropdown,
+  Tooltip
 } from 'antd';
 import {
   EditOutlined,
   DeleteOutlined,
   PlusOutlined,
-  ReloadOutlined
+  ReloadOutlined,
+  SettingOutlined
 } from '@ant-design/icons';
 import axios from 'axios';
 import VariantTable from './table/VariantTable';
+import ColumnVisibility from '../../components/ColumnVisibility';
 
 const { Title } = Typography;
 const { confirm } = Modal;
@@ -258,11 +262,33 @@ const Product = () => {
     },
     { title: 'Nhãn hiệu', dataIndex: 'brand_name' },
     { title: 'Slug', dataIndex: 'slug' },
-    { title: 'Giá', dataIndex: 'price', render: val => val?.toLocaleString('vi-VN') },
-    { title: 'Giá vốn', dataIndex: 'cost', render: val => val?.toLocaleString('vi-VN') },
+    {
+      title: 'Giá',
+      dataIndex: 'price',
+      sorter: (a, b) => (a.price || 0) - (b.price || 0),
+      render: val => val?.toLocaleString('vi-VN')
+    },
+    {
+      title: 'Giá vốn',
+      dataIndex: 'cost',
+      sorter: (a, b) => (a.cost || 0) - (b.cost || 0),
+      render: val => val?.toLocaleString('vi-VN')
+    },
     { title: 'Giảm giá (%)', dataIndex: 'discount', render: val => val || 0 },
     { title: 'Tồn kho', dataIndex: 'stock' },
-    { title: 'Mô tả', dataIndex: 'description' },
+    {
+      title: 'Mô tả',
+      dataIndex: 'description',
+      render: text => {
+        if (!text) return '—';
+        const short = text.length > 50 ? `${text.slice(0, 50)}…` : text;
+        return (
+          <Tooltip title={text}>
+            {short}
+          </Tooltip>
+        );
+      }
+    },
     {
       title: 'Trạng thái',
       dataIndex: 'status',
@@ -280,6 +306,10 @@ const Product = () => {
     }
   ];
 
+  const [visibleColumns, setVisibleColumns] = useState(
+    columns.map(c => c.dataIndex || c.key)
+  );
+
   return (
     <div style={{ padding: 24 }}>
       <Row justify="space-between" align="middle" style={{ marginBottom: 24 }}>
@@ -294,12 +324,25 @@ const Product = () => {
             />
             <Button type="primary" onClick={handleSearch}>Lọc</Button>
             <Button type="primary" onClick={handleCreate}>Tạo mới</Button>
+            <Dropdown
+              overlay={
+                <ColumnVisibility
+                  columns={columns}
+                  visibleColumns={visibleColumns}
+                  onChange={setVisibleColumns}
+                />
+              }
+              trigger={['click']}
+            >
+              <Button icon={<SettingOutlined />}>Chọn cột</Button>
+            </Dropdown>
           </Space>
         </Col>
       </Row>
 
       <Table
-        columns={columns}
+        columns={columns.filter(c => visibleColumns.includes(c.dataIndex || c.key))}
+
         dataSource={data}
         loading={loading}
         expandable={{

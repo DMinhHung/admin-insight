@@ -52,11 +52,19 @@ const App = () => {
     '/product': '4-1',
     '/product-attribute': '4-2',
     '/product-variant': '4-3',
-    '/customer': '5',
+
+    '/customer': '5-1',
+    '/group-customer': '5-2',
+
     '/vendor': '6-1',
-    '/vendor': '6-2',
-    '/vendor': '6-3',
+    '/nhap-hang': '6-2',
+    '/tra-hang-nhap': '6-3',
+
     '/invoice': '7',
+
+    '/xuat-nhap-kho': '7-1',
+    '/kiem-ke-kho': '7-2',
+
     '/user': '8',
   };
 
@@ -80,6 +88,19 @@ const App = () => {
   useEffect(() => {
     if (location.pathname.startsWith('/product')) {
       setOpenKeys(['4']);
+    } else if (location.pathname.startsWith('/customer') || location.pathname.startsWith('/group-customer')) {
+      setOpenKeys(['5']);
+    } else if (
+      location.pathname.startsWith('/vendor') ||
+      location.pathname.startsWith('/nhap-hang') ||
+      location.pathname.startsWith('/tra-hang-nhap')
+    ) {
+      setOpenKeys(['6']);
+    } else if (
+      location.pathname.startsWith('/xuat-nhap-kho') ||
+      location.pathname.startsWith('/kiem-ke-kho')
+    ) {
+      setOpenKeys(['7']);
     }
   }, [location.pathname]);
 
@@ -143,25 +164,33 @@ const App = () => {
             {
               key: '5',
               icon: <UsergroupAddOutlined style={{ fontSize: 20 }} />,
-              label: <Link to="/customer">Khách Hàng</Link>,
+              label: 'Khách Hàng',
               style: { marginBottom: 12 },
+              children: [
+                { key: '5-1', label: <Link to="/customer">Khách Hàng</Link> },
+                { key: '5-2', label: <Link to="/group-customer">Nhóm Khách Hàng</Link> },
+              ],
             },
             {
               key: '6',
               icon: <UserSwitchOutlined style={{ fontSize: 20 }} />,
-              label: <Link to="/vendor">Nhập Hàng</Link>,
+              label: 'Nhập Hàng',
               style: { marginBottom: 12 },
               children: [
                 { key: '6-1', label: <Link to="/vendor">Nhà Cung Cấp</Link> },
-                { key: '6-1', label: <Link to="/nhap-hang">Nhập Hàng</Link> },
-                { key: '6-2', label: <Link to="/tra-hang-nhap">Trả Hàng Nhập</Link> },
+                { key: '6-2', label: <Link to="/nhap-hang">Nhập Hàng</Link> },
+                { key: '6-3', label: <Link to="/tra-hang-nhap">Trả Hàng Nhập</Link> },
               ],
             },
             {
               key: '7',
               icon: <FileDoneOutlined style={{ fontSize: 20 }} />,
-              label: <Link to="/invoice">Kho Hàng</Link>,
+              label: 'Kho Hàng',
               style: { marginBottom: 12 },
+              children: [
+                { key: '7-1', label: <Link to="/xuat-nhap-kho">Xuất Nhập Kho</Link> },
+                { key: '7-2', label: <Link to="/kiem-ke-kho">Kiểm Kê Kho</Link> },
+              ],
             },
             {
               key: '8',

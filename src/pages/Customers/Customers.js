@@ -1,7 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Table, Typography, Input, Button, Space, message, Row, Col, Modal, Form, Upload, Collapse, Radio, Card, Select } from 'antd';
-import { EditOutlined, DeleteOutlined, PlusOutlined, ReloadOutlined } from '@ant-design/icons';
+import { Table, Typography, Input, Button, Space, message, Row, Col, Modal, Form, Upload, Collapse, Radio, Card, Select, Dropdown } from 'antd';
+import { EditOutlined, DeleteOutlined, PlusOutlined, ReloadOutlined, SettingOutlined } from '@ant-design/icons';
 import axios from 'axios';
+import ColumnVisibility from '../../components/ColumnVisibility';
+
 
 const { Title } = Typography;
 const { confirm } = Modal;
@@ -14,7 +16,12 @@ const Customers = () => {
     const [isModalVisible, setIsModalVisible] = useState(false);
     const [customerForm] = Form.useForm();
     const [editingCustomer, setEditingCustomer] = useState(null);
-    const [thumbnailList, setThumbnailList] = useState([]);
+    const [groupOptions, setGroupOptions] = useState([]);
+    const [banks, setBanks] = useState([]);
+    const [cities, setCities] = useState([]);
+    const [wards, setWards] = useState([]);
+    const [loadingCity, setLoadingCity] = useState(false);
+    const [loadingWard, setLoadingWard] = useState(false);
     const token = localStorage.getItem('accessToken');
     const hasFetched = useRef(false);
 
@@ -23,30 +30,28 @@ const Customers = () => {
         headers: { Authorization: `Bearer ${token}` },
     });
 
-    const generateCode = (length = 12) => {
-        return Array.from({ length }, () => Math.floor(Math.random() * 10)).join('');
-    };
+    const generateCode = (length = 12) =>
+        Array.from({ length }, () => Math.floor(Math.random() * 10)).join('');
 
     const fetchCustomers = async (nameSearch = '') => {
         setLoading(true);
         try {
-            const res = await api.get(`/api/v1/admin/customer/list${nameSearch ? `?name=${nameSearch}` : ''}`);
-            const customers = res?.data?.data?.items || [];
-            setData(
-                customers.map(c => ({
-                    key: c.id,
-                    code: c.code,
-                    name: c.name,
-                    phone: c.phone,
-                    email: c.email,
-                    gender: c.gender,
-                    company: c.company,
-                    tax_code: c.tax_code,
-                    cccd: c.cccd,
-                    debt: c.debt,
-                    total_sales: c.total_sales,
-                }))
+            const res = await api.get(
+                `api/v1/admin/customer/form${nameSearch ? `?name=${nameSearch}` : ''}`
             );
+            const customers = res?.data?.data?.items || [];
+            setData(customers.map(c => ({
+                key: c.id,
+                code: c.code,
+                name: c.name,
+                thumbnail: c.thumbnail,
+                phone: c.phone,
+                email: c.email,
+                gender: c.gender,
+                company_name: c.company_name,
+                tax_code: c.tax_code,
+                debt: c.debt,
+            })));
         } catch (err) {
             message.error(err.message || 'Không thể tải danh sách khách hàng');
         } finally {
@@ -54,10 +59,60 @@ const Customers = () => {
         }
     };
 
+    const fetchGroups = async () => {
+        try {
+            const res = await api.get('/api/v1/admin/customer/group');
+            setGroupOptions(res?.data?.data?.items || []);
+        } catch {
+            message.error('Không tải được nhóm KH');
+        }
+    };
+
+    const fetchBanks = async () => {
+        try {
+            const res = await axios.get('https://api.vietqr.io/v2/banks');
+            setBanks(res.data?.data || []);
+        } catch {
+            message.error('Không tải được ngân hàng');
+        }
+    };
+
+    const fetchCities = async () => {
+        try {
+            setLoadingCity(true);
+            const res = await axios.get('https://provinces.open-api.vn/api/v2/');
+            setCities(res.data || []);
+        } catch {
+            message.error('Không tải được danh sách thành phố');
+        } finally {
+            setLoadingCity(false);
+        }
+    };
+
+    const handleProvinceChange = async (provinceCode) => {
+        try {
+            setLoadingWard(true);
+            const res = await axios.get(
+                `https://provinces.open-api.vn/api/v2/p/${provinceCode}?depth=2`
+            );
+            setWards(res.data.wards || []);
+            customerForm.setFieldsValue({ ward: undefined });
+        } catch {
+            message.error('Không tải được Phường/Xã');
+        } finally {
+            setLoadingWard(false);
+        }
+    };
+
+    useEffect(() => { fetchGroups(); }, []);
+    useEffect(() => { fetchBanks(); }, []);
+    useEffect(() => { fetchCities(); }, []);
+
     useEffect(() => {
         if (hasFetched.current) return;
         hasFetched.current = true;
         fetchCustomers();
+        fetchGroups();
     }, []);
 
     const handleSearch = () => fetchCustomers(searchText);
@@ -67,6 +122,7 @@ const Customers = () => {
         customerForm.resetFields();
         customerForm.setFieldsValue({
             code: generateCode(12),
+            type: 1,
         });
         setIsModalVisible(true);
     };
@@ -74,9 +130,13 @@ const Customers = () => {
     const handleEdit = async (record) => {
         try {
             setLoading(true);
-            const res = await api.get(`/api/v1/admin/customer/view`, { params: { id: record.key } });
+            const res = await api.get(`/api/v1/admin/customer/form/view`,
+                { params: { id: record.key } });
             const customer = res?.data?.data || {};
-            customerForm.setFieldsValue(customer);
+            customerForm.setFieldsValue({
+                ...customer,
+                type: customer.type ? Number(customer.type) : 1,
+            });
             setEditingCustomer(customer.id);
             setIsModalVisible(true);
         } catch (err) {
@@ -89,16 +149,20 @@ const Customers = () => {
     const handleModalOk = async () => {
         try {
             const values = await customerForm.validateFields();
+            const cityObj = cities.find(c => c.code === values.city);
+            const wardObj = wards.find(w => w.code === values.ward);
+            values.city = cityObj?.name || '';
+            values.ward = wardObj?.name || '';
+
             setLoading(true);
-            let url = editingCustomer
-                ? '/api/v1/admin/customer/update'
-                : '/api/v1/admin/customer/create';
+            const url = editingCustomer
+                ? '/api/v1/admin/customer/form/update'
+                : '/api/v1/admin/customer/form/create';
             if (editingCustomer) values.id = editingCustomer;
 
             const res = await api.post(url, values);
-            const dataRes = res.data;
-            if (!dataRes.status) {
-                message.error(dataRes.message || 'Thao tác thất bại');
+            if (!res.data.status) {
+                message.error(res.data.message || 'Thao tác thất bại');
                 return;
             }
             message.success(editingCustomer ? 'Cập nhật thành công' : 'Tạo mới thành công');
@@ -116,8 +180,7 @@ const Customers = () => {
     const handleDelete = async (id) => {
         try {
             setLoading(true);
-            const res = await api.post(`/api/v1/admin/customer/delete`, { id });
-            if (!res.data) throw new Error('Xóa thất bại');
+            await api.post(`/api/v1/admin/customer/form/delete`, { id });
             setData(prev => prev.filter(item => item.key !== id));
             message.success('Đã xóa thành công');
         } catch (err) {
@@ -127,44 +190,38 @@ const Customers = () => {
         }
     };
 
-    const showDeleteConfirm = (record) => {
-        confirm({
-            title: 'Bạn có chắc muốn xóa khách hàng này?',
-            content: `Tên: ${record.name}`,
-            okText: 'Xác nhận',
-            okType: 'danger',
-            cancelText: 'Hủy',
-            onOk() { return handleDelete(record.key); },
-        });
-    };
-
-    const handleModalCancel = () => {
-        setIsModalVisible(false);
-        customerForm.resetFields();
-        setEditingCustomer(null);
-        setThumbnailList([]);
-    };
-
     const columns = [
-        { title: 'Mã Khách hàng', dataIndex: 'code', sorter: (a, b) => a.code.localeCompare(b.code) },
-        { title: 'Tên khách hàng', dataIndex: 'name', sorter: (a, b) => a.name.localeCompare(b.name) },
-        { title: 'Điện thoại', dataIndex: 'phone', sorter: (a, b) => a.phone.localeCompare(b.phone) },
-        { title: 'Email', dataIndex: 'email' },
-        { title: 'Giới tính', dataIndex: 'gender', render: g => g === 'male' ? 'Nam' : g === 'female' ? 'Nữ' : '-' },
-        { title: 'Công ty', dataIndex: 'company' },
-        { title: 'Mã số thuế', dataIndex: 'tax_code' },
-        { title: 'CCCD', dataIndex: 'cccd' },
+        { title: 'Mã KH', dataIndex: 'code', key: 'code', sorter: (a, b) => a.code.localeCompare(b.code) },
+        { title: 'Tên', dataIndex: 'name', key: 'name', sorter: (a, b) => a.name.localeCompare(b.name) },
+        { title: 'Điện thoại', dataIndex: 'phone', key: 'phone' },
+        { title: 'Email', dataIndex: 'email', key: 'email' },
+        {
+            title: 'Giới tính',
+            dataIndex: 'gender',
+            key: 'gender',
+            render: g => ({ 1: 'Nam', 2: 'Nữ' }[g] || '-'),
+        },
+        { title: 'Công ty', dataIndex: 'company_name', key: 'company_name' },
+        { title: 'MST', dataIndex: 'tax_code', key: 'tax_code' },
         {
             title: 'Hành động',
             key: 'actions',
-            render: (_, record) => (
-                <Space size="middle">
-                    <Button type="primary" icon={<EditOutlined />} onClick={() => handleEdit(record)}>Sửa</Button>
-                    <Button danger icon={<DeleteOutlined />} onClick={() => showDeleteConfirm(record)}>Xoá</Button>
+            render: (_, r) => (
+                <Space>
+                    <Button type="primary" icon={<EditOutlined />} onClick={() => handleEdit(r)}>Sửa</Button>
+                    <Button danger icon={<DeleteOutlined />} onClick={() => confirm({
+                        title: 'Xóa khách hàng?',
+                        onOk: () => handleDelete(r.key),
+                    })}>Xóa</Button>
                 </Space>
-            )
-        }
+            ),
+        },
     ];
+
+    const [visibleColumns, setVisibleColumns] = useState(
+        columns.map(c => c.dataIndex || c.key)
+    );
+
 
     return (
         <div style={{ padding: 24 }}>
@@ -173,49 +230,77 @@ const Customers = () => {
                 <Col>
                     <Space>
                         <Input
-                            placeholder="Tìm kiếm theo tên..."
+                            placeholder="Tìm tên..."
                             value={searchText}
                             onChange={e => setSearchText(e.target.value)}
-                            style={{ width: 200 }}
                             onPressEnter={handleSearch}
+                            style={{ width: 200 }}
                         />
                         <Button type="primary" onClick={handleCreate}>Tạo mới</Button>
+                        <Dropdown
+                            overlay={
+                                <ColumnVisibility
+                                    columns={columns}
+                                    visibleColumns={visibleColumns}
+                                    onChange={setVisibleColumns}
+                                />
+                            }
+                            trigger={['click']}
+                        >
+                            <Button icon={<SettingOutlined />}>Chọn cột</Button>
+                        </Dropdown>
                     </Space>
                 </Col>
             </Row>
-            <Table columns={columns} dataSource={data} loading={loading} />
+
+            <Table   columns={columns.filter(c => visibleColumns.includes(c.dataIndex || c.key))} dataSource={data} loading={loading} />
 
             <Modal
-                className="product-modal"
                 open={isModalVisible}
-                width="90vw"
-                style={{ maxWidth: '1200px', overflowX: 'hidden' }}
-                bodyStyle={{ maxHeight: '80vh', overflowY: 'auto', overflowX: 'hidden', paddingRight: 24 }}
-                onCancel={handleModalCancel}
+                onCancel={() => { setIsModalVisible(false); customerForm.resetFields(); }}
                 onOk={handleModalOk}
+                width="90vw"
+                style={{ maxWidth: 1200 }}
+                bodyStyle={{ maxHeight: '80vh', overflowY: 'auto' }}
                 maskClosable={false}
             >
-                <Form form={customerForm} layout="vertical" style={{ width: '100%' }}>
+                <Form form={customerForm} layout="vertical">
                     <Row gutter={16}>
-                        <Col span={12}><Form.Item name="name" label="Tên khách hàng" rules={[{ required: true }]}><Input /></Form.Item></Col>
-                        <Col span={12}><Form.Item name="code" label="Mã khách hàng" rules={[{ required: true }]}><Input
-                            placeholder="Tự động / Nhập thủ công"
-                            addonAfter={
-                                <Button
-                                    icon={<ReloadOutlined />}
-                                    size="small"
-                                    onClick={() => customerForm.setFieldsValue({ code: generateCode(12) })}
+                        <Col span={12}>
+                            <Form.Item name="name" label="Tên khách hàng" rules={[{ required: true }]}>
+                                <Input />
+                            </Form.Item>
+                        </Col>
+                        <Col span={12}>
+                            <Form.Item name="code" label="Mã khách hàng" rules={[{ required: true }]}>
+                                <Input
+                                    addonAfter={
+                                        <Button
+                                            icon={<ReloadOutlined />}
+                                            size="small"
+                                            onClick={() => customerForm.setFieldsValue({ code: generateCode() })}
+                                        />
+                                    }
                                 />
-                            }
-                        /></Form.Item></Col>
+                            </Form.Item>
+                        </Col>
                     </Row>
+
                     <Row gutter={16}>
                         <Col span={8}><Form.Item name="phone" label="Điện thoại"><Input /></Form.Item></Col>
-                        <Col span={8}><Form.Item name="gender" label="Giới tính"><Select placeholder="Chọn giới tính"><Option value="male">Nam</Option><Option value="female">Nữ</Option></Select></Form.Item></Col>
+                        <Col span={8}>
+                            <Form.Item name="gender" label="Giới tính">
+                                <Select placeholder="Chọn">
+                                    <Option value={1}>Nam</Option>
+                                    <Option value={2}>Nữ</Option>
+                                </Select>
+                            </Form.Item>
+                        </Col>
                         <Col span={8}><Form.Item name="email" label="Email"><Input /></Form.Item></Col>
                     </Row>
+
                     <Row gutter={16}>
-                        <Col span={12}><Form.Item name="facebook" label="Facebook"><Input /></Form.Item></Col>
+                        <Col span={12}><Form.Item name="fb_url" label="Facebook"><Input /></Form.Item></Col>
                         <Col span={12}>
                             <Form.Item name="thumbnail" label="Ảnh">
                                 <Upload
@@ -228,72 +313,158 @@ const Customers = () => {
                                     onChange={({ file }) => {
                                         if (file.status === 'done') {
                                             const { url, path } = file.response?.data || {};
-                                            if (url && path) customerForm.setFieldsValue({ thumbnail: url, thumbnail_path: path });
+                                            customerForm.setFieldsValue({ thumbnail: url, thumbnail_path: path });
                                         } else if (file.status === 'error') message.error('Upload thất bại');
                                     }}
                                     onRemove={async (file) => {
                                         try {
                                             const path = file.response?.data?.path || customerForm.getFieldValue('thumbnail_path');
-                                            if (path) {
-                                                await api.post('/api/v1/general/upload/delete', { path });
-                                                customerForm.setFieldsValue({ thumbnail: null, thumbnail_path: null });
-                                            }
+                                            if (path) await api.post('/api/v1/general/upload/delete', { path });
+                                            customerForm.setFieldsValue({ thumbnail: null, thumbnail_path: null });
                                         } catch { message.error('Xóa thất bại'); }
                                     }}
                                 >
-                                    <div>
-                                        <PlusOutlined />
-                                        <div style={{ marginTop: 8 }}>Upload</div>
-                                    </div>
+                                    <div><PlusOutlined /><div style={{ marginTop: 8 }}>Upload</div></div>
                                 </Upload>
                             </Form.Item>
                         </Col>
                     </Row>
 
-                    <Card style={{ borderRadius: 8, border: "1px solid #f0f0f0", boxShadow: "0 2px 8px rgba(0,0,0,0.05)", marginBottom: 16 }}>
+                    <Card style={{ marginBottom: 16 }}>
                         <Collapse ghost>
-                            <Collapse.Panel header="Địa chỉ" key="1">
+                            <Collapse.Panel header="Địa chỉ" key="addr">
                                 <Row gutter={16}>
-                                    <Col span={8}><Form.Item name="province" label="Tỉnh/Thành phố"><Input /></Form.Item></Col>
-                                    <Col span={8}><Form.Item name="district" label="Quận/Huyện"><Input /></Form.Item></Col>
-                                    <Col span={8}><Form.Item name="ward" label="Phường/Xã"><Input /></Form.Item></Col>
+                                    <Col span={8}>
+                                        <Form.Item
+                                            name="city"
+                                            label="Tỉnh/Thành phố"
+                                            rules={[{ required: true }]}
+                                        >
+                                            <Select
+                                                showSearch
+                                                placeholder="Chọn tỉnh/thành"
+                                                loading={loadingCity}
+                                                onChange={handleProvinceChange}
+                                                optionFilterProp="children"
+                                                filterOption={(input, opt) =>
+                                                    opt?.children.toLowerCase().includes(input.toLowerCase())
+                                                }
+                                            >
+                                                {cities.map(c => (
+                                                    <Option key={c.code} value={c.code}>{c.name}</Option>
+                                                ))}
+                                            </Select>
+                                        </Form.Item>
+                                    </Col>
+                                    <Col span={8}>
+                                        <Form.Item
+                                            name="ward"
+                                            label="Quận/Huyện/Phường/Xã"
+                                            rules={[{ required: true }]}
+                                        >
+                                            <Select
+                                                showSearch
+                                                placeholder="Chọn khu vực"
+                                                loading={loadingWard}
+                                                disabled={!wards.length}
+                                                optionFilterProp="children"
+                                                filterOption={(input, opt) =>
+                                                    opt?.children.toLowerCase().includes(input.toLowerCase())
+                                                }
+                                            >
+                                                {wards.map(w => (
+                                                    <Option key={w.code} value={w.code}>{`${w.name} (${w.division_type})`}</Option>
+                                                ))}
+                                            </Select>
+                                        </Form.Item>
+                                    </Col>
                                 </Row>
-                                <Form.Item name="address" label="Địa chỉ chi tiết"><Input.TextArea rows={2} /></Form.Item>
+                                <Form.Item name="address" label="Địa chỉ chi tiết">
+                                    <Input.TextArea rows={2} />
+                                </Form.Item>
                             </Collapse.Panel>
                         </Collapse>
                     </Card>
 
-                    <Card style={{ borderRadius: 8, border: "1px solid #f0f0f0", boxShadow: "0 2px 8px rgba(0,0,0,0.05)", marginBottom: 16 }}>
+                    <Card style={{ marginBottom: 16 }}>
                         <Collapse ghost>
-                            <Collapse.Panel header="Nhóm khách hàng & ghi chú" key="2">
+                            <Collapse.Panel header="Nhóm khách hàng & Ghi chú" key="group">
                                 <Row gutter={16}>
-                                    <Col span={12}><Form.Item name="customer_group" label="Nhóm khách hàng"><Input /></Form.Item></Col>
-                                    <Col span={12}><Form.Item name="note" label="Ghi chú"><Input.TextArea rows={2} /></Form.Item></Col>
+                                    <Col span={12}>
+                                        <Form.Item
+                                            name="group_customer"
+                                            label="Nhóm khách hàng"
+                                            rules={[{ required: true, message: 'Vui lòng chọn nhóm' }]}
+                                        >
+                                            <Select
+                                                placeholder="Chọn nhóm khách hàng"
+                                                optionFilterProp="children"
+                                                showSearch
+                                                filterOption={(input, option) =>
+                                                    (option?.children ?? '').toLowerCase().includes(input.toLowerCase())
+                                                }
+                                            >
+                                                {groupOptions.map(g => (
+                                                    <Option key={g.id} value={g.id}>
+                                                        {g.name}
+                                                    </Option>
+                                                ))}
+                                            </Select>
+                                        </Form.Item>
+                                    </Col>
+                                    <Col span={12}>
+                                        <Form.Item name="note" label="Ghi chú">
+                                            <Input.TextArea rows={2} />
+                                        </Form.Item>
+                                    </Col>
                                 </Row>
                             </Collapse.Panel>
                         </Collapse>
                     </Card>
 
-                    <Card style={{ borderRadius: 8, border: "1px solid #f0f0f0", boxShadow: "0 2px 8px rgba(0,0,0,0.05)", marginBottom: 16 }}>
+                    <Card>
                         <Collapse ghost>
-                            <Collapse.Panel header="Thông tin xuất hóa đơn" key="3">
-                                <Form.Item name="customer_type" label="Loại khách hàng">
+                            <Collapse.Panel header="Thông tin xuất hóa đơn" key="invoice">
+                                <Form.Item
+                                    name="type"
+                                    label="Loại khách hàng"
+                                    rules={[{ required: true, message: 'Vui lòng chọn loại khách hàng' }]}
+                                >
                                     <Radio.Group>
-                                        <Radio value="individual">Cá nhân</Radio>
-                                        <Radio value="organization">Tổ chức/Hộ kinh doanh</Radio>
+                                        <Radio value={1}>Cá nhân</Radio>
+                                        <Radio value={2}>Tổ chức/Hộ kinh doanh</Radio>
                                     </Radio.Group>
                                 </Form.Item>
                                 <Row gutter={16}>
                                     <Col span={12}><Form.Item name="tax_code" label="Mã số thuế"><Input /></Form.Item></Col>
-                                    <Col span={12}><Form.Item name="company" label="Tên công ty"><Input /></Form.Item></Col>
+                                    <Col span={12}><Form.Item name="company_name" label="Tên công ty"><Input /></Form.Item></Col>
                                 </Row>
                                 <Row gutter={16}>
-                                    <Col span={12}><Form.Item name="cccd" label="CCCD/CMND"><Input /></Form.Item></Col>
-                                    <Col span={12}><Form.Item name="passport" label="Số hộ chiếu"><Input /></Form.Item></Col>
+                                    <Col span={12}><Form.Item name="national" label="CCCD/CMND"><Input /></Form.Item></Col>
+                                    <Col span={12}><Form.Item name="passport_number" label="Số hộ chiếu"><Input /></Form.Item></Col>
                                 </Row>
                                 <Row gutter={16}>
-                                    <Col span={12}><Form.Item name="bank" label="Ngân hàng"><Input /></Form.Item></Col>
-                                    <Col span={12}><Form.Item name="bank_account" label="Số tài khoản"><Input /></Form.Item></Col>
+                                    <Col span={12}>
+                                        <Form.Item name="bank_name" label="Ngân hàng">
+                                            <Select
+                                                placeholder="Chọn ngân hàng"
+                                                showSearch
+                                                optionFilterProp="children"
+                                                dropdownStyle={{ maxHeight: 400, overflow: 'auto' }}
+                                            >
+                                                {banks.map(b => (
+                                                    <Option key={b.code} value={b.code}>
+                                                        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                                            <img src={b.logo} alt={b.shortName}
+                                                                style={{ width: 70, height: 70, objectFit: 'contain' }} />
+                                                            <span>{b.shortName} - {b.name}</span>
+                                                        </div>
+                                                    </Option>
+                                                ))}
+                                            </Select>
+                                        </Form.Item>
+                                    </Col>
+                                    <Col span={12}><Form.Item name="bank_account_number" label="Số tài khoản"><Input /></Form.Item></Col>
                                 </Row>
                             </Collapse.Panel>
                         </Collapse>
