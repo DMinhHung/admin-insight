@@ -191,13 +191,7 @@ const App = () => {
             {
               key: '8',
               icon: <UserOutlined style={{ fontSize: 20 }} />,
-              label: <Link to="/user">Quản Lý Người Dùng</Link>,
-              style: { marginBottom: 12 },
-            },
-             {
-              key: '9',
-              icon: <UserOutlined style={{ fontSize: 20 }} />,
-              label: <Link to="/user">NHân Viên</Link>,
+              label: <Link to="/user">Quản Lý Nhân Viên</Link>,
               style: { marginBottom: 12 },
             },
             {
