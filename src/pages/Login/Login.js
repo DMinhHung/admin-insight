@@ -1,33 +1,59 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Form, Input, Button, Typography, Alert } from 'antd';
 import { useNavigate } from 'react-router-dom';
 
 const { Title } = Typography;
 
-export default function Login({}) {
+export default function Login() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  const navigate = useNavigate(); 
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const token = localStorage.getItem('accessToken');
+    const expiryTime = localStorage.getItem('tokenExpiry');
+
+    if (token && expiryTime) {
+      if (Date.now() > parseInt(expiryTime)) {
+        localStorage.removeItem('accessToken');
+        localStorage.removeItem('tokenExpiry');
+      } else {
+        navigate('/dashboard');
+      }
+    }
+  }, [navigate]);
 
   const onLogin = async (values) => {
     setError(null);
     setLoading(true);
     try {
-      const res = await fetch(`${process.env.REACT_APP_ADMIN_INSIGHT_URL}/api/v1/admin/user/form/login`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          email: values.email,
-          password: values.password,
-        }),
-      });  
+      const res = await fetch(
+        `${process.env.REACT_APP_ADMIN_INSIGHT_URL}/api/v1/admin/user/form/login`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            email: values.email,
+            password: values.password,
+          }),
+        }
+      );
 
       if (!res.ok) throw new Error('Đăng nhập thất bại');
       const data = await res.json();
       const token = data?.data?.user?.token;
+
       if (token) {
+        const expiresIn = 24 * 60 * 60 * 1000;
+        const expiryTime = Date.now() + expiresIn;
+
         localStorage.setItem('accessToken', token);
-        onLogin?.(data);
+        localStorage.setItem('tokenExpiry', expiryTime);
+        const userId = data?.data?.user?.id;
+        if (userId) {
+          localStorage.setItem('userId', userId);
+        }
+
         navigate('/dashboard');
       }
     } catch (e) {
@@ -66,13 +92,13 @@ export default function Login({}) {
 
         <Form
           name="login"
-          initialValues={{ remember: true }}
           onFinish={onLogin}
           layout="vertical"
         >
           <Form.Item
             name="email"
             label="Email"
+            rules={[{ required: true, message: 'Vui lòng nhập email!' }]}
           >
             <Input placeholder="admin@example.com" />
           </Form.Item>

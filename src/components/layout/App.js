@@ -40,11 +40,18 @@ const App = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
+  // Xử lý logout
   const handleLogout = () => {
+    // Xóa token, userId và expiry trong localStorage
+    localStorage.removeItem('accessToken');
+    localStorage.removeItem('userId');
+    localStorage.removeItem('tokenExpiry');
+
+    // Chuyển sang trang login
     navigate("/login");
   };
 
-  // Hàm lấy selectedKey và openKeys dựa trên pathname
+  // Lấy selectedKey và openKeys từ pathname
   const getMenuKeys = (pathname) => {
     if (pathname.startsWith('/dashboard')) return { selectedKey: '1', openKeys: [] };
     if (pathname.startsWith('/brand')) return { selectedKey: '2', openKeys: [] };
@@ -109,21 +116,9 @@ const App = () => {
           onOpenChange={setOpenKeys}
           style={{ fontSize: 16, marginTop: 50 }}
           items={[
-            {
-              key: '1',
-              icon: <RiseOutlined style={{ fontSize: 20 }} />,
-              label: <Link to="/dashboard">Dashboard</Link>,
-            },
-            {
-              key: '2',
-              icon: <BlockOutlined style={{ fontSize: 20 }} />,
-              label: <Link to="/brand">Thương Hiệu</Link>,
-            },
-            {
-              key: '3',
-              icon: <ApartmentOutlined style={{ fontSize: 20 }} />,
-              label: <Link to="/category">Danh Mục</Link>,
-            },
+            { key: '1', icon: <RiseOutlined style={{ fontSize: 20 }} />, label: <Link to="/dashboard">Dashboard</Link> },
+            { key: '2', icon: <BlockOutlined style={{ fontSize: 20 }} />, label: <Link to="/brand">Thương Hiệu</Link> },
+            { key: '3', icon: <ApartmentOutlined style={{ fontSize: 20 }} />, label: <Link to="/category">Danh Mục</Link> },
             {
               key: '4',
               icon: <ProductOutlined style={{ fontSize: 20 }} />,
@@ -161,17 +156,8 @@ const App = () => {
                 { key: '7-3', label: <Link to="/check-invoice">Kiểm Kê Kho</Link> },
               ],
             },
-            {
-              key: '8',
-              icon: <UserOutlined style={{ fontSize: 20 }} />,
-              label: <Link to="/user">Quản Lý Nhân Viên</Link>,
-            },
-            {
-              key: '9',
-              icon: <SettingOutlined style={{ fontSize: 20 }} />,
-              label: 'Setting',
-              disabled: true,
-            },
+            { key: '8', icon: <UserOutlined style={{ fontSize: 20 }} />, label: <Link to="/user">Quản Lý Nhân Viên</Link> },
+            { key: '9', icon: <SettingOutlined style={{ fontSize: 20 }} />, label: 'Setting', disabled: true },
           ]}
         />
       </Sider>
