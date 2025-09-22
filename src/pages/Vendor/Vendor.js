@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import {
     Table, Typography, Input, Button, Space, message,
-    Row, Col, Modal, Form, Collapse, Card, Select, Dropdown
+    Row, Col, Modal, Form, Select, Dropdown, Tabs
 } from 'antd';
 import { EditOutlined, DeleteOutlined, ReloadOutlined, SettingOutlined } from '@ant-design/icons';
 import axios from 'axios';
@@ -207,6 +207,147 @@ const Vendor = () => {
         },
     ];
 
+
+    const tabItems = [
+        {
+            key: '1',
+            label: 'Thông tin chung',
+            children: (
+                <>
+                    <Row gutter={16}>
+                        <Col span={12}>
+                            <Form.Item name="name" label="Tên nhà cung cấp" rules={[{ required: true }]}>
+                                <Input />
+                            </Form.Item>
+                        </Col>
+                        <Col span={12}>
+                            <Form.Item name="code" label="Mã nhà cung cấp" rules={[{ required: true }]}>
+                                <Input
+                                    addonAfter={
+                                        <Button
+                                            icon={<ReloadOutlined />}
+                                            size="small"
+                                            onClick={() => vendorForm.setFieldsValue({ code: generateCode() })}
+                                        />
+                                    }
+                                />
+                            </Form.Item>
+                        </Col>
+                    </Row>
+
+                    <Row gutter={16}>
+                        <Col span={12}><Form.Item name="phone" label="Điện thoại"><Input /></Form.Item></Col>
+                        <Col span={12}><Form.Item name="email" label="Email"><Input /></Form.Item></Col>
+                    </Row>
+                </>
+            ),
+        },
+        {
+            key: '2',
+            label: 'Địa chỉ',
+            children: (
+                <>
+                    <Row gutter={16}>
+                        <Col span={8}>
+                            <Form.Item
+                                name="city"
+                                label="Tỉnh/Thành phố"
+                                rules={[{ required: true }]}
+                            >
+                                <Select
+                                    showSearch
+                                    placeholder="Chọn tỉnh/thành"
+                                    loading={loadingCity}
+                                    onChange={handleProvinceChange}
+                                    optionFilterProp="children"
+                                    filterOption={(input, opt) =>
+                                        opt?.children.toLowerCase().includes(input.toLowerCase())
+                                    }
+                                >
+                                    {cities.map(c => (
+                                        <Option key={c.code} value={c.code}>{c.name}</Option>
+                                    ))}
+                                </Select>
+                            </Form.Item>
+                        </Col>
+                        <Col span={8}>
+                            <Form.Item
+                                name="ward"
+                                label="Quận/Huyện/Phường/Xã"
+                                rules={[{ required: true }]}
+                            >
+                                <Select
+                                    showSearch
+                                    placeholder="Chọn khu vực"
+                                    loading={loadingWard}
+                                    disabled={!wards.length}
+                                    optionFilterProp="children"
+                                    filterOption={(input, opt) =>
+                                        opt?.children.toLowerCase().includes(input.toLowerCase())
+                                    }
+                                >
+                                    {wards.map(w => (
+                                        <Option key={w.code} value={w.code}>{`${w.name} (${w.division_type})`}</Option>
+                                    ))}
+                                </Select>
+                            </Form.Item>
+                        </Col>
+                    </Row>
+                    <Form.Item name="address" label="Địa chỉ chi tiết">
+                        <Input.TextArea rows={2} />
+                    </Form.Item>
+                </>
+            ),
+        },
+        {
+            key: '3',
+            label: 'Nhóm & Ghi chú',
+            children: (
+                <Row gutter={16}>
+                    <Col span={12}>
+                        <Form.Item
+                            name="group_vendor"
+                            label="Nhóm nhà cung cấp"
+                            rules={[{ required: true, message: 'Vui lòng chọn nhóm' }]}
+                        >
+                            <Select
+                                placeholder="Chọn nhóm nhà cung cấp"
+                                optionFilterProp="children"
+                                showSearch
+                                filterOption={(input, option) =>
+                                    (option?.children ?? '').toLowerCase().includes(input.toLowerCase())
+                                }
+                            >
+                                {groupOptions.map(g => (
+                                    <Option key={g.id} value={g.id}>
+                                        {g.name}
+                                    </Option>
+                                ))}
+                            </Select>
+                        </Form.Item>
+                    </Col>
+                    <Col span={12}>
+                        <Form.Item name="note" label="Ghi chú">
+                            <Input.TextArea rows={2} />
+                        </Form.Item>
+                    </Col>
+                </Row>
+            ),
+        },
+        {
+            key: '4',
+            label: 'Xuất hóa đơn',
+            children: (
+                <>
+                    <Row gutter={16}>
+                        <Col span={12}><Form.Item name="tax_code" label="Mã số thuế"><Input /></Form.Item></Col>
+                        <Col span={12}><Form.Item name="company_name" label="Tên công ty"><Input /></Form.Item></Col>
+                    </Row>
+                </>
+            ),
+        },
+    ];
+
     return (
         <div style={{ padding: 24 }}>
             <Row justify="space-between" align="middle" style={{ marginBottom: 24 }}>
@@ -245,142 +386,20 @@ const Vendor = () => {
 
             <Modal
                 open={isModalVisible}
-                onCancel={() => { setIsModalVisible(false); vendorForm.resetFields(); }}
+                onCancel={() => {
+                    setIsModalVisible(false);
+                    vendorForm.resetFields();
+                }}
                 onOk={handleModalOk}
-                width="90vw"
-                style={{ maxWidth: 1200 }}
-                bodyStyle={{ maxHeight: '80vh', overflowY: 'auto' }}
+                width={1500}
                 maskClosable={false}
+                bodyStyle={{
+                    height: 600,
+                }}
+                title={editingVendor ? 'Cập nhật khách hàng' : 'Tạo khách hàng mới'}
             >
                 <Form form={vendorForm} layout="vertical">
-                    <Row gutter={16}>
-                        <Col span={12}>
-                            <Form.Item name="name" label="Tên nhà cung cấp" rules={[{ required: true }]}>
-                                <Input />
-                            </Form.Item>
-                        </Col>
-                        <Col span={12}>
-                            <Form.Item name="code" label="Mã nhà cung cấp" rules={[{ required: true }]}>
-                                <Input
-                                    addonAfter={
-                                        <Button
-                                            icon={<ReloadOutlined />}
-                                            size="small"
-                                            onClick={() => vendorForm.setFieldsValue({ code: generateCode() })}
-                                        />
-                                    }
-                                />
-                            </Form.Item>
-                        </Col>
-                    </Row>
-
-                    <Row gutter={16}>
-                        <Col span={12}><Form.Item name="phone" label="Điện thoại"><Input /></Form.Item></Col>
-                        <Col span={12}><Form.Item name="email" label="Email"><Input /></Form.Item></Col>
-                    </Row>
-
-                    <Card style={{ marginBottom: 16 }}>
-                        <Collapse ghost>
-                            <Collapse.Panel header="Địa chỉ" key="addr">
-                                <Row gutter={16}>
-                                    <Col span={8}>
-                                        <Form.Item
-                                            name="city"
-                                            label="Tỉnh/Thành phố"
-                                            rules={[{ required: true }]}
-                                        >
-                                            <Select
-                                                showSearch
-                                                placeholder="Chọn tỉnh/thành"
-                                                loading={loadingCity}
-                                                onChange={handleProvinceChange}
-                                                optionFilterProp="children"
-                                                filterOption={(input, opt) =>
-                                                    opt?.children.toLowerCase().includes(input.toLowerCase())
-                                                }
-                                            >
-                                                {cities.map(c => (
-                                                    <Option key={c.code} value={c.code}>{c.name}</Option>
-                                                ))}
-                                            </Select>
-                                        </Form.Item>
-                                    </Col>
-                                    <Col span={8}>
-                                        <Form.Item
-                                            name="ward"
-                                            label="Quận/Huyện/Phường/Xã"
-                                            rules={[{ required: true }]}
-                                        >
-                                            <Select
-                                                showSearch
-                                                placeholder="Chọn khu vực"
-                                                loading={loadingWard}
-                                                disabled={!wards.length}
-                                                optionFilterProp="children"
-                                                filterOption={(input, opt) =>
-                                                    opt?.children.toLowerCase().includes(input.toLowerCase())
-                                                }
-                                            >
-                                                {wards.map(w => (
-                                                    <Option key={w.code} value={w.code}>{`${w.name} (${w.division_type})`}</Option>
-                                                ))}
-                                            </Select>
-                                        </Form.Item>
-                                    </Col>
-                                </Row>
-                                <Form.Item name="address" label="Địa chỉ chi tiết">
-                                    <Input.TextArea rows={2} />
-                                </Form.Item>
-                            </Collapse.Panel>
-                        </Collapse>
-                    </Card>
-
-                    <Card style={{ marginBottom: 16 }}>
-                        <Collapse ghost>
-                            <Collapse.Panel header="Nhóm nhà cung cấp & Ghi chú" key="group">
-                                <Row gutter={16}>
-                                    <Col span={12}>
-                                        <Form.Item
-                                            name="group_vendor"
-                                            label="Nhóm nhà cung cấp"
-                                            rules={[{ required: true, message: 'Vui lòng chọn nhóm' }]}
-                                        >
-                                            <Select
-                                                placeholder="Chọn nhóm nhà cung cấp"
-                                                optionFilterProp="children"
-                                                showSearch
-                                                filterOption={(input, option) =>
-                                                    (option?.children ?? '').toLowerCase().includes(input.toLowerCase())
-                                                }
-                                            >
-                                                {groupOptions.map(g => (
-                                                    <Option key={g.id} value={g.id}>
-                                                        {g.name}
-                                                    </Option>
-                                                ))}
-                                            </Select>
-                                        </Form.Item>
-                                    </Col>
-                                    <Col span={12}>
-                                        <Form.Item name="note" label="Ghi chú">
-                                            <Input.TextArea rows={2} />
-                                        </Form.Item>
-                                    </Col>
-                                </Row>
-                            </Collapse.Panel>
-                        </Collapse>
-                    </Card>
-
-                    <Card>
-                        <Collapse ghost>
-                            <Collapse.Panel header="Thông tin xuất hóa đơn" key="invoice">
-                                <Row gutter={16}>
-                                    <Col span={12}><Form.Item name="tax_code" label="Mã số thuế"><Input /></Form.Item></Col>
-                                    <Col span={12}><Form.Item name="company_name" label="Tên công ty"><Input /></Form.Item></Col>
-                                </Row>
-                            </Collapse.Panel>
-                        </Collapse>
-                    </Card>
+                    <Tabs items={tabItems} />
                 </Form>
             </Modal>
         </div>

@@ -250,6 +250,9 @@ const Product = () => {
     setGalleryList([]);
   };
 
+  const defaultVisible = ['name', 'sku', 'thumbnail', 'brand_name', 'price', 'description', 'status', 'actions', 'stock'];
+  const [visibleColumns, setVisibleColumns] = useState(defaultVisible);
+
   const columns = [
     { title: 'Tên', dataIndex: 'name', sorter: (a, b) => a.name.localeCompare(b.name) },
     { title: 'SKU', dataIndex: 'sku' },
@@ -306,10 +309,6 @@ const Product = () => {
     }
   ];
 
-  const [visibleColumns, setVisibleColumns] = useState(
-    columns.map(c => c.dataIndex || c.key)
-  );
-
   return (
     <div style={{ padding: 24 }}>
       <Row justify="space-between" align="middle" style={{ marginBottom: 24 }}>
@@ -323,7 +322,7 @@ const Product = () => {
               style={{ width: 200 }}
             />
             <Button type="primary" onClick={handleSearch}>Lọc</Button>
-            <Button type="primary" onClick={handleCreate}>Tạo mới</Button>
+            <Button type="primary" onClick={handleCreate}>Thêm mới</Button>
             <Dropdown
               overlay={
                 <ColumnVisibility
@@ -342,7 +341,6 @@ const Product = () => {
 
       <Table
         columns={columns.filter(c => visibleColumns.includes(c.dataIndex || c.key))}
-
         dataSource={data}
         loading={loading}
         expandable={{
@@ -353,6 +351,10 @@ const Product = () => {
             />
           ),
           rowExpandable: () => true,
+        }}
+        scroll={{
+          y: 500,
+          x: 'max-content',
         }}
       />
 

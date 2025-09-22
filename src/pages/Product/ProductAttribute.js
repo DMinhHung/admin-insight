@@ -42,7 +42,7 @@ const ProductAttribute = () => {
           },
         }
       );
-      if (!res.ok) throw new Error('Không thể tải danh sách');
+      if (!res.ok) throw new Error('Không thể tải danh sách thuộc tính');
       const result = await res.json();
       const items = result?.data?.items ?? [];
 
@@ -93,11 +93,10 @@ const ProductAttribute = () => {
       );
       const result = await res.json();
       if (!res.ok || !result?.data)
-        throw new Error(result?.data?.message || 'Cannot fetch data');
+        throw new Error(result?.data?.message || 'Không thể lấy dữ liệu');
 
       const item = result.data;
 
-      // Chuyển mảng object value -> mảng string cho Select mode="tags"
       const formValues = {
         name: item.name,
         status: item.status,
@@ -139,15 +138,15 @@ const ProductAttribute = () => {
 
       const result = await res.json();
       if (!res.ok || !result)
-        throw new Error(result?.data?.message || 'Operation failed');
+        throw new Error(result?.data?.message || 'Thao tác thất bại');
 
-      message.success(editingProduct ? 'Updated successfully' : 'Created successfully');
+      message.success(editingProduct ? 'Cập nhật thành công' : 'Tạo mới thành công');
       setIsModalVisible(false);
       productForm.resetFields();
       setEditingProduct(null);
       fetchProductAttribute();
     } catch (err) {
-      message.error(err.message || 'Validate Failed');
+      message.error(err.message || 'Xác thực thất bại');
     } finally {
       setLoading(false);
     }
@@ -169,12 +168,12 @@ const ProductAttribute = () => {
       );
       const result = await res.json();
       if (!res.ok || !result)
-        throw new Error(result?.message || 'Failed to delete');
+        throw new Error(result?.message || 'Xóa thất bại');
 
       setData((prev) => prev.filter((item) => item.key !== id));
-      message.success('Deleted successfully');
+      message.success('Đã xóa thành công');
     } catch (err) {
-      message.error(err.message || 'Delete failed');
+      message.error(err.message || 'Xóa thất bại');
     } finally {
       setLoading(false);
     }
@@ -182,11 +181,11 @@ const ProductAttribute = () => {
 
   const showDeleteConfirm = (record) => {
     confirm({
-      title: 'Are you sure you want to delete this?',
-      content: `name: ${record.name}`,
-      okText: 'Confirm',
+      title: 'Bạn có chắc muốn xóa?',
+      content: `Tên: ${record.name}`,
+      okText: 'Xác nhận',
       okType: 'danger',
-      cancelText: 'Cancel',
+      cancelText: 'Hủy',
       onOk() {
         return handleDelete(record.key);
       },
@@ -194,9 +193,9 @@ const ProductAttribute = () => {
   };
 
   const columns = [
-    { title: 'Name', dataIndex: 'name', sorter: (a, b) => a.name.localeCompare(b.name) },
+    { title: 'Tên', dataIndex: 'name', sorter: (a, b) => a.name.localeCompare(b.name) },
     {
-      title: 'Values',
+      title: 'Giá trị',
       dataIndex: 'values',
       render: (values) => (
         <>
@@ -209,14 +208,14 @@ const ProductAttribute = () => {
       ),
     },
     {
-      title: 'Status',
+      title: 'Trạng thái',
       dataIndex: 'status',
       sorter: (a, b) => a.status - b.status,
       render: (value) =>
-        value === 1 ? <Tag color="green">Active</Tag> : <Tag color="red">Inactive</Tag>,
+        value === 1 ? <Tag color="green">Đang hoạt động</Tag> : <Tag color="red">Ngừng</Tag>,
     },
     {
-      title: 'Actions',
+      title: 'Thao tác',
       key: 'actions',
       render: (_, record) => (
         <Space size="middle">
@@ -239,26 +238,26 @@ const ProductAttribute = () => {
     <div style={{ padding: 24 }}>
       <Row justify="space-between" align="middle" style={{ marginBottom: 24 }}>
         <Col>
-          <Title level={2}>Product Attribute</Title>
+          <Title level={2}>Thuộc tính sản phẩm</Title>
         </Col>
         <Col>
           <Space>
             <Input
-              placeholder="Search by name..."
+              placeholder="Tìm theo tên..."
               value={searchText}
               onChange={(e) => setSearchText(e.target.value)}
               style={{ width: 200 }}
               onPressEnter={handleSearch}
             />
             <Button type="primary" onClick={handleCreate}>
-              Create
+              Thêm mới
             </Button>
           </Space>
         </Col>
       </Row>
       <Table columns={columns} dataSource={data} loading={loading} />
       <Modal
-        title={editingProduct ? 'Edit' : 'Create'}
+        title={editingProduct ? 'Chỉnh sửa' : 'Thêm mới'}
         open={isModalVisible}
         onCancel={() => {
           setIsModalVisible(false);
@@ -266,27 +265,27 @@ const ProductAttribute = () => {
           setEditingProduct(null);
         }}
         onOk={handleModalOk}
-        okText={editingProduct ? 'Update' : 'Create'}
+        okText={editingProduct ? 'Cập nhật' : 'Tạo'}
         width={900}
         maskClosable={false}
       >
         <Form form={productForm} layout="vertical">
           <Row gutter={16}>
             <Col span={12}>
-              <Form.Item name="name" label="Name" rules={[{ required: true }]}>
+              <Form.Item name="name" label="Tên" rules={[{ required: true, message: 'Nhập tên' }]}>
                 <Input />
               </Form.Item>
             </Col>
             <Col span={12}>
               <Form.Item
                 name="value"
-                label="Values"
-                rules={[{ required: true, message: 'Nhập ít nhất 1 value' }]}
+                label="Giá trị"
+                rules={[{ required: true, message: 'Nhập ít nhất 1 giá trị' }]}
               >
                 <Select
                   mode="tags"
                   tokenSeparators={[',']}
-                  placeholder="Nhập nhiều value, Enter hoặc , để thêm"
+                  placeholder="Nhập nhiều giá trị, Enter hoặc , để thêm"
                 />
               </Form.Item>
             </Col>
@@ -295,12 +294,12 @@ const ProductAttribute = () => {
             <Col span={12}>
               <Form.Item
                 name="status"
-                label="Status"
-                rules={[{ required: true, message: 'Select status' }]}
+                label="Trạng thái"
+                rules={[{ required: true, message: 'Chọn trạng thái' }]}
               >
-                <Select placeholder="Select status">
-                  <Select.Option value={1}>Active</Select.Option>
-                  <Select.Option value={2}>Inactive</Select.Option>
+                <Select placeholder="Chọn trạng thái">
+                  <Select.Option value={1}>Đang hoạt động</Select.Option>
+                  <Select.Option value={2}>Ngừng</Select.Option>
                 </Select>
               </Form.Item>
             </Col>

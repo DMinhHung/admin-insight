@@ -40,24 +40,19 @@ const App = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
-  // Xử lý logout
   const handleLogout = () => {
-    // Xóa token, userId và expiry trong localStorage
     localStorage.removeItem('accessToken');
     localStorage.removeItem('userId');
     localStorage.removeItem('tokenExpiry');
-
-    // Chuyển sang trang login
     navigate("/login");
   };
 
-  // Lấy selectedKey và openKeys từ pathname
   const getMenuKeys = (pathname) => {
     if (pathname.startsWith('/dashboard')) return { selectedKey: '1', openKeys: [] };
     if (pathname.startsWith('/brand')) return { selectedKey: '2', openKeys: [] };
     if (pathname.startsWith('/category')) return { selectedKey: '3', openKeys: [] };
-    if (pathname.startsWith('/product')) return { selectedKey: '4-1', openKeys: ['4'] };
     if (pathname.startsWith('/product-attribute')) return { selectedKey: '4-2', openKeys: ['4'] };
+    if (pathname.startsWith('/product')) return { selectedKey: '4-1', openKeys: ['4'] };
     if (pathname.startsWith('/customer')) return { selectedKey: '5-1', openKeys: ['5'] };
     if (pathname.startsWith('/group-customer')) return { selectedKey: '5-2', openKeys: ['5'] };
     if (pathname.startsWith('/vendor')) return { selectedKey: '6-1', openKeys: ['6'] };

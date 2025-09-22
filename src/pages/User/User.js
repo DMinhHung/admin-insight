@@ -268,7 +268,6 @@ const User = () => {
         width={800}
       >
         <Form form={form} layout="vertical">
-          {/* --- Thông tin tài khoản --- */}
           <Title level={4}>Thông tin tài khoản</Title>
           <Row gutter={16}>
             <Col span={12}>

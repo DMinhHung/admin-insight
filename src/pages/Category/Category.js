@@ -1,5 +1,18 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Table, Typography, Input, Button, Space, message, Row, Col, Tag, Modal, Form, Select } from 'antd';
+import {
+  Table,
+  Typography,
+  Input,
+  Button,
+  Space,
+  message,
+  Row,
+  Col,
+  Tag,
+  Modal,
+  Form,
+  Select
+} from 'antd';
 import { EditOutlined, DeleteOutlined } from '@ant-design/icons';
 
 const { Title } = Typography;
@@ -27,7 +40,7 @@ const Category = () => {
           },
         }
       );
-      if (!res.ok) throw new Error('Không thể tải danh sách');
+      if (!res.ok) throw new Error('Không thể tải danh sách danh mục');
       const data = await res.json();
       const brand = data?.data?.items ?? [];
       setData(
@@ -71,7 +84,7 @@ const Category = () => {
         },
       });
       const data = await res.json();
-      if (!res.ok || !data) throw new Error(data?.data?.message || 'Cannot fetch data');
+      if (!res.ok || !data) throw new Error(data?.data?.message || 'Không thể lấy dữ liệu');
 
       const brand = data?.data || {};
 
@@ -118,15 +131,15 @@ const Category = () => {
       });
 
       const data = await res.json();
-      if (!res.ok || !data) throw new Error(data?.data?.message || 'Operation failed');
+      if (!res.ok || !data) throw new Error(data?.data?.message || 'Thao tác thất bại');
 
-      message.success(editingBrand ? 'Updated successfully' : 'Created successfully');
+      message.success(editingBrand ? 'Cập nhật thành công' : 'Tạo mới thành công');
       setIsModalVisible(false);
       categoryForm.resetFields();
       setEditingBrand(null);
       fetchCategory();
     } catch (err) {
-      message.error(err.message || 'Validate Failed');
+      message.error(err.message || 'Xác thực thất bại');
     } finally {
       setLoading(false);
     }
@@ -144,12 +157,12 @@ const Category = () => {
         },
       });
       const data = await res.json();
-      if (!res.ok || !data) throw new Error(data?.message || 'Failed to delete');
+      if (!res.ok || !data) throw new Error(data?.message || 'Xoá thất bại');
 
       setData(prev => prev.filter(item => item.key !== id));
-      message.success('Deleted successfully');
+      message.success('Xoá thành công');
     } catch (err) {
-      message.error(err.message || 'Delete failed');
+      message.error(err.message || 'Xoá thất bại');
     } finally {
       setLoading(false);
     }
@@ -157,27 +170,27 @@ const Category = () => {
 
   const showDeleteConfirm = (record) => {
     confirm({
-      title: 'Are you sure you want to delete this?',
-      content: `name: ${record.name}`,
-      okText: 'Confirm',
+      title: 'Bạn có chắc chắn muốn xoá?',
+      content: `Danh mục: ${record.name}`,
+      okText: 'Xác nhận',
       okType: 'danger',
-      cancelText: 'Cancel',
+      cancelText: 'Huỷ',
       onOk() { return handleDelete(record.key); },
     });
   };
 
   const columns = [
-    { title: 'Name', dataIndex: 'name', sorter: (a, b) => a.name.localeCompare(b.name) },
+    { title: 'Tên', dataIndex: 'name', sorter: (a, b) => a.name.localeCompare(b.name) },
     { title: 'Slug', dataIndex: 'slug', sorter: (a, b) => a.slug.localeCompare(b.slug) },
-    { title: 'Description', dataIndex: 'description', sorter: (a, b) => a.description.localeCompare(b.description) },
+    { title: 'Mô tả', dataIndex: 'description', sorter: (a, b) => a.description.localeCompare(b.description) },
     {
-      title: 'Status',
+      title: 'Trạng thái',
       dataIndex: 'status',
       sorter: (a, b) => a.status - b.status,
-      render: value => value === 1 ? <Tag color="green">Active</Tag> : <Tag color="red">Inactive</Tag>
+      render: value => value === 1 ? <Tag color="green">Hoạt động</Tag> : <Tag color="red">Ngưng</Tag>
     },
     {
-      title: 'Actions',
+      title: 'Thao tác',
       key: 'actions',
       render: (_, record) => (
         <Space size="middle">
@@ -191,63 +204,59 @@ const Category = () => {
   return (
     <div style={{ padding: 24 }}>
       <Row justify="space-between" align="middle" style={{ marginBottom: 24 }}>
-        <Col><Title level={2}>Category</Title></Col>
+        <Col><Title level={2}>Danh Mục</Title></Col>
         <Col>
           <Space>
             <Input
-              placeholder="Search by name..."
+              placeholder="Tìm kiếm theo tên..."
               value={searchText}
               onChange={e => setSearchText(e.target.value)}
               style={{ width: 200 }}
               onPressEnter={handleSearch}
             />
-            <Button type="primary" onClick={handleCreate}>Create</Button>
+            <Button type="primary" onClick={handleCreate}>Thêm mới</Button>
           </Space>
         </Col>
       </Row>
       <Table columns={columns} dataSource={data} loading={loading} />
       <Modal
-        title={editingBrand ? 'Edit' : 'Creater'}
-        visible={isModalVisible}
+        title={editingBrand ? 'Chỉnh sửa danh mục' : 'Tạo danh mục'}
+        open={isModalVisible}
         onCancel={() => { setIsModalVisible(false); categoryForm.resetFields(); setEditingBrand(null); }}
         onOk={handleModalOk}
-        okText={editingBrand ? 'Update' : 'Create'}
+        okText={editingBrand ? 'Cập nhật' : 'Tạo'}
         width={900}
         maskClosable={false}
       >
         <Form form={categoryForm} layout="vertical">
           <Row gutter={16}>
-            <Col span={12}><Form.Item name="name" label="Name" rules={[{ required: true }]}><Input /></Form.Item></Col>
+            <Col span={12}><Form.Item name="name" label="Tên" rules={[{ required: true, message: 'Nhập tên' }]}><Input /></Form.Item></Col>
             <Col span={12}><Form.Item name="slug" label="Slug"><Input /></Form.Item></Col>
           </Row>
           <Row gutter={16}>
             <Col span={12}>
-              <Form.Item name="status" label="Status" rules={[{ required: true, message: 'Select status' }]}>
-                <Select placeholder="Select status">
-                  <Select.Option value={1}>Active</Select.Option>
-                  <Select.Option value={2}>Inactive</Select.Option>
+              <Form.Item name="status" label="Trạng thái" rules={[{ required: true, message: 'Chọn trạng thái' }]}>
+                <Select placeholder="Chọn trạng thái">
+                  <Select.Option value={1}>Hoạt động</Select.Option>
+                  <Select.Option value={2}>Ngưng</Select.Option>
                 </Select>
               </Form.Item>
             </Col>
-            <Col span={12}>
-              <Form.Item name="parent" label="Parent" rules={[{ message: 'Select parent' }]}>
-                <Select placeholder="Select parent">
-                  <Select.Option value={1}>Active</Select.Option>
-                  <Select.Option value={2}>Inactive</Select.Option>
+            {/* <Col span={12}>
+              <Form.Item name="parent" label="Danh mục cha">
+                <Select placeholder="Chọn danh mục cha (nếu có)">
+                  <Select.Option value={1}>Ví dụ 1</Select.Option>
+                  <Select.Option value={2}>Ví dụ 2</Select.Option>
                 </Select>
               </Form.Item>
-            </Col>
+            </Col> */}
           </Row>
           <Row gutter={16}>
             <Col span={24}>
-              <Form.Item
-                name="description"
-                label="Description"
-                rules={[{ required: false }]}
-              >
+              <Form.Item name="description" label="Mô tả">
                 <Input.TextArea
                   rows={4}
-                  placeholder="Enter description..."
+                  placeholder="Nhập mô tả..."
                   showCount
                   maxLength={500}
                 />
