@@ -7,7 +7,6 @@ const { Option } = Select;
 const Dashboard = () => {
   const [period, setPeriod] = useState('today');
 
-  // Mock dữ liệu
   const revenueData = {
     today: [
       { time: '00-06h', revenue: 1_200_000 },
@@ -44,7 +43,6 @@ const Dashboard = () => {
     { type: 'Đã hủy', value: 30 },
   ];
 
-  // Config
   const revenueConfig = useMemo(() => ({
     data: revenueData[period],
     xField: 'time',
@@ -90,7 +88,6 @@ const Dashboard = () => {
         gridTemplateColumns: 'repeat(auto-fit, minmax(340px,1fr))',
         gap: 20
       }}>
-        {/* Doanh thu */}
         <div style={{ background: '#fff', padding: 16, borderRadius: 8 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <h4>Doanh thu</h4>

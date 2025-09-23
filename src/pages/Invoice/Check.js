@@ -1,16 +1,15 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Table, Typography, Input, Button, Space, message, Row, Col, Tag, Modal, Form, Select, Image, InputNumber } from 'antd';
+import { Table, Typography, Input, Button, Space, message, Row, Col, Tag, Form, Select, Image, InputNumber, Drawer } from 'antd';
 import { EditOutlined, DeleteOutlined, PlusOutlined, ReloadOutlined } from '@ant-design/icons';
 import axios from 'axios';
 
 const { Title } = Typography;
-const { confirm } = Modal;
 
 const Check = () => {
     const [searchText, setSearchText] = useState('');
     const [data, setData] = useState([]);
     const [loading, setLoading] = useState(false);
-    const [isModalVisible, setIsModalVisible] = useState(false);
+    const [isDrawerVisible, setIsDrawerVisible] = useState(false);
     const [form] = Form.useForm();
     const [editingWarehouse, setEditingWarehouse] = useState(null);
     const [warehouses, setWarehouses] = useState([]);
@@ -36,14 +35,7 @@ const Check = () => {
             if (!res.ok) throw new Error('Cannot load stock check list');
             const result = await res.json();
             const items = result?.data?.items ?? [];
-            setData(items.map(item => ({
-                key: item.id,
-                code: item.code,
-                created_at: item.created_at,
-                type: item.type,
-                value: item.value,
-                status: item.status,
-            })));
+            setData(items.map(item => ({ ...item, key: item.id })));
         } catch (err) {
             message.error(err.message);
         } finally {
@@ -94,7 +86,7 @@ const Check = () => {
     const handleCreate = () => {
         setEditingWarehouse(null);
         form.resetFields();
-        setIsModalVisible(true);
+        setIsDrawerVisible(true);
         form.setFieldsValue({ code: generateCode(12), items: [] });
     };
 
@@ -120,7 +112,7 @@ const Check = () => {
                     note: it.note || ''
                 })),
             });
-            setIsModalVisible(true);
+            setIsDrawerVisible(true);
         } catch (err) {
             message.error(err.message);
         } finally {
@@ -128,7 +120,7 @@ const Check = () => {
         }
     };
 
-    const handleModalOk = async () => {
+    const handleDrawerSubmit = async () => {
         try {
             const values = await form.validateFields();
             setLoading(true);
@@ -170,7 +162,7 @@ const Check = () => {
             if (!res.ok || !data) throw new Error(data?.data?.message || 'Operation failed');
 
             message.success(editingWarehouse ? 'Cập nhật thành công' : 'Tạo thành công');
-            setIsModalVisible(false);
+            setIsDrawerVisible(false);
             form.resetFields();
             setEditingWarehouse(null);
             fetchStockCheck();
@@ -201,29 +193,20 @@ const Check = () => {
         }
     };
 
-    const showDeleteConfirm = (record) => {
-        confirm({
-            title: 'Bạn có chắc muốn xóa kiểm kê này?',
-            content: `Mã: ${record.code}`,
-            okText: 'Xác nhận',
-            okType: 'danger',
-            cancelText: 'Hủy',
-            onOk() { return handleDelete(record.key); },
-        });
-    };
-
     const columns = [
         { title: 'Mã nhập hàng', dataIndex: 'code' },
         { title: 'Thời gian', dataIndex: 'created_at' },
         { title: 'Loại hóa đơn', dataIndex: 'type', render: type => type === 1 ? 'Nhập' : type === 2 ? 'Xuất' : 'Hủy' },
         { title: 'Mô tả', dataIndex: 'value' },
         { title: 'Trạng thái', dataIndex: 'status', render: value => value === 1 ? <Tag color="green">Active</Tag> : <Tag color="red">Inactive</Tag> },
-        { title: 'Actions', key: 'actions', render: (_, record) => (
-            <Space>
-                <Button type="primary" icon={<EditOutlined />} onClick={() => handleEdit(record)} />
-                <Button danger icon={<DeleteOutlined />} onClick={() => showDeleteConfirm(record)} />
-            </Space>
-        ) },
+        {
+            title: 'Actions', key: 'actions', render: (_, record) => (
+                <Space>
+                    <Button type="primary" icon={<EditOutlined />} onClick={() => handleEdit(record)} />
+                    <Button danger icon={<DeleteOutlined />} onClick={() => handleDelete(record.key)} />
+                </Space>
+            )
+        },
     ];
 
     return (
@@ -246,14 +229,18 @@ const Check = () => {
 
             <Table columns={columns} dataSource={data} loading={loading} rowKey="key" />
 
-            <Modal
+            <Drawer
                 title={editingWarehouse ? 'Sửa kiểm kê kho' : 'Tạo kiểm kê kho'}
-                visible={isModalVisible}
-                onCancel={() => { setIsModalVisible(false); form.resetFields(); setEditingWarehouse(null); }}
-                onOk={handleModalOk}
-                okText={editingWarehouse ? 'Cập nhật' : 'Tạo'}
-                width={1200}
-                maskClosable={false}
+                width={1500}
+                onClose={() => { setIsDrawerVisible(false); form.resetFields(); setEditingWarehouse(null); }}
+                open={isDrawerVisible}
+                bodyStyle={{ paddingBottom: 80 }}
+                extra={
+                    <Space>
+                        <Button onClick={() => { setIsDrawerVisible(false); form.resetFields(); setEditingWarehouse(null); }}>Hủy</Button>
+                        <Button type="primary" onClick={handleDrawerSubmit}>{editingWarehouse ? 'Cập nhật' : 'Tạo'}</Button>
+                    </Space>
+                }
             >
                 <Form form={form} layout="vertical">
                     <Row gutter={32}>
@@ -263,28 +250,71 @@ const Check = () => {
                                 {(fields, { add, remove }) => (
                                     <>
                                         {fields.map(({ key, name, ...restField }) => (
-                                            <Row key={key} gutter={12} align="middle" style={{ marginBottom: 12, padding: 12, border: '1px solid #d9d9d9', borderRadius: 6, background: '#fafafa' }}>
-                                                <Col span={4}>
+                                            <Row
+                                                key={key}
+                                                gutter={12}
+                                                align="middle"
+                                                style={{
+                                                    marginBottom: 12,
+                                                    padding: 12,
+                                                    border: '1px solid #d9d9d9',
+                                                    borderRadius: 6,
+                                                    background: '#fafafa',
+                                                }}
+                                            >
+                                                <Col span={2}>
                                                     <Form.Item {...restField} noStyle shouldUpdate>
                                                         {() => {
                                                             const productId = form.getFieldValue(['items', name, 'productId']);
                                                             const product = products.find(p => p.id === productId);
-                                                            return product?.thumbnail ? <Image src={product.thumbnail} width={50} height={50} preview={false} /> : <div style={{ width: 50, height: 50, background: '#ccc' }} />;
+                                                            return product?.thumbnail ? (
+                                                                <Image src={product.thumbnail} width={50} height={50} preview={false} />
+                                                            ) : (
+                                                                <div style={{ width: 50, height: 50, background: '#ccc', borderRadius: 4 }} />
+                                                            );
                                                         }}
                                                     </Form.Item>
                                                 </Col>
+
                                                 <Col span={6}>
-                                                    <Form.Item {...restField} name={[name, 'productId']} rules={[{ required: true, message: 'Chọn sản phẩm' }]} style={{ marginBottom: 0 }}>
+                                                    <Form.Item
+                                                        {...restField}
+                                                        name={[name, 'productId']}
+                                                        rules={[{ required: true, message: 'Chọn sản phẩm' }]}
+                                                        style={{ marginBottom: 0 }}
+                                                    >
                                                         <Select placeholder="Chọn sản phẩm" showSearch optionFilterProp="children">
-                                                            {products.map(p => <Select.Option key={p.id} value={p.id}>{p.name}</Select.Option>)}
+                                                            {products.map(p => (
+                                                                <Select.Option key={p.id} value={p.id}>
+                                                                    <span
+                                                                        style={{
+                                                                            display: 'inline-block',
+                                                                            maxWidth: '140px',
+                                                                            overflow: 'hidden',
+                                                                            textOverflow: 'ellipsis',
+                                                                            whiteSpace: 'nowrap',
+                                                                        }}
+                                                                        title={p.name}
+                                                                    >
+                                                                        {p.name}
+                                                                    </span>
+                                                                </Select.Option>
+                                                            ))}
                                                         </Select>
                                                     </Form.Item>
                                                 </Col>
+
                                                 <Col span={3}>
-                                                    <Form.Item {...restField} name={[name, 'quantity']} rules={[{ required: true, message: 'Nhập số lượng' }]} style={{ marginBottom: 0 }}>
+                                                    <Form.Item
+                                                        {...restField}
+                                                        name={[name, 'quantity']}
+                                                        rules={[{ required: true, message: 'Nhập số lượng' }]}
+                                                        style={{ marginBottom: 0 }}
+                                                    >
                                                         <InputNumber min={0} placeholder="Hiện tại" style={{ width: '100%' }} />
                                                     </Form.Item>
                                                 </Col>
+
                                                 <Col span={3}>
                                                     <Form.Item noStyle shouldUpdate>
                                                         {() => {
@@ -295,18 +325,51 @@ const Check = () => {
                                                         }}
                                                     </Form.Item>
                                                 </Col>
-                                                <Col span={6}>
+
+                                                <Col span={3}>
+                                                    <Form.Item noStyle shouldUpdate>
+                                                        {() => {
+                                                            const productId = form.getFieldValue(['items', name, 'productId']);
+                                                            const product = products.find(p => p.id === productId);
+                                                            const systemQuantity = product?.stock ?? null;
+                                                            const actualQuantity = form.getFieldValue(['items', name, 'quantity']) ?? null;
+
+                                                            if (actualQuantity !== null && systemQuantity !== null) {
+                                                                const difference = actualQuantity - systemQuantity;
+                                                                return (
+                                                                    <InputNumber
+                                                                        value={difference}
+                                                                        readOnly
+                                                                        style={{
+                                                                            width: '100%',
+                                                                            color: difference < 0 ? 'red' : difference > 0 ? 'green' : 'black',
+                                                                            fontWeight: 'bold',
+                                                                        }}
+                                                                        placeholder="Chênh lệch"
+                                                                    />
+                                                                );
+                                                            }
+                                                            return null;
+                                                        }}
+                                                    </Form.Item>
+                                                </Col>
+
+                                                <Col span={5}>
                                                     <Form.Item {...restField} name={[name, 'note']} style={{ marginBottom: 0 }}>
                                                         <Input placeholder="Ghi chú" />
                                                     </Form.Item>
                                                 </Col>
+
                                                 <Col span={2}>
                                                     <Button type="text" danger icon={<DeleteOutlined />} onClick={() => remove(name)} />
                                                 </Col>
                                             </Row>
                                         ))}
+
                                         <Form.Item>
-                                            <Button type="dashed" onClick={() => add()} block icon={<PlusOutlined />}>Thêm sản phẩm mới</Button>
+                                            <Button type="dashed" onClick={() => add()} block icon={<PlusOutlined />}>
+                                                Thêm sản phẩm mới
+                                            </Button>
                                         </Form.Item>
                                     </>
                                 )}
@@ -348,7 +411,7 @@ const Check = () => {
                         </Col>
                     </Row>
                 </Form>
-            </Modal>
+            </Drawer>
         </div>
     );
 };
