@@ -237,7 +237,7 @@ const User = () => {
   return (
     <div style={{ padding: 24 }}>
       <Row justify="space-between" align="middle" style={{ marginBottom: 24 }}>
-        <Col><Title level={2}>Quản lý người dùng</Title></Col>
+        <Col><Title level={2}>Tài Khoản</Title></Col>
         <Col>
           <Space>
             <Input

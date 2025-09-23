@@ -12,7 +12,8 @@ import {
   UsergroupAddOutlined,
   UserSwitchOutlined,
   FileDoneOutlined,
-  ApartmentOutlined
+  ApartmentOutlined,
+  IdcardOutlined
 } from '@ant-design/icons';
 import {
   Button,
@@ -60,7 +61,10 @@ const App = () => {
     if (pathname.startsWith('/warehouse')) return { selectedKey: '7-1', openKeys: ['7'] };
     if (pathname.startsWith('/stock-invoice')) return { selectedKey: '7-2', openKeys: ['7'] };
     if (pathname.startsWith('/check-invoice')) return { selectedKey: '7-3', openKeys: ['7'] };
-    if (pathname.startsWith('/user')) return { selectedKey: '8', openKeys: [] };
+    if (pathname.startsWith('/employee')) return { selectedKey: '8-1', openKeys: [] };
+    if (pathname.startsWith('/schedule')) return { selectedKey: '8-2', openKeys: [] };
+    // if (pathname.startsWith('/employee')) return { selectedKey: '8-3', openKeys: [] };
+    if (pathname.startsWith('/user')) return { selectedKey: '9', openKeys: [] };
     return { selectedKey: '1', openKeys: [] };
   };
 
@@ -151,8 +155,17 @@ const App = () => {
                 { key: '7-3', label: <Link to="/check-invoice">Kiểm Kê Kho</Link> },
               ],
             },
-            { key: '8', icon: <UserOutlined style={{ fontSize: 20 }} />, label: <Link to="/user">Quản Lý Nhân Viên</Link> },
-            { key: '9', icon: <SettingOutlined style={{ fontSize: 20 }} />, label: 'Setting', disabled: true },
+            {
+              key: '8', icon: <IdcardOutlined style={{ fontSize: 20 }} />,
+              label: 'Nhân Viên',
+              children: [
+                { key: '8-1', label: <Link to="/employee">Nhân Viên</Link> },
+                { key: '8-2', label: <Link to="/schedule">Lịch Làm Việc</Link> },
+                { key: '8-3', label: <Link to="/stock-invoice">Bảng Lương</Link>, disabled: true },
+              ],
+            },
+            { key: '9', icon: <UserOutlined style={{ fontSize: 20 }} />, label: <Link to="/user">Quản Lý Tài Khoản</Link> },
+            { key: '10', icon: <SettingOutlined style={{ fontSize: 20 }} />, label: 'Setting', disabled: true },
           ]}
         />
       </Sider>

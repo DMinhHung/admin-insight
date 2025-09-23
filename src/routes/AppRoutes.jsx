@@ -1,7 +1,6 @@
 import "../assets/css/style.css";
 import { Routes, Route, Navigate  } from "react-router-dom";
 import Product from "../pages/Product/Product";
-import Staffs from "../pages/Staffs/Staffs";
 import Customers from "../pages/Customers/Customers";
 import Dashboard from "../pages/Dashboard/Dashboard";
 import App from "../components/layout/App";
@@ -18,6 +17,8 @@ import GroupVendor from "../pages/Vendor/GroupVendor";
 import Warehouse from "../pages/Warehouse/Warehouse";
 import Stock from "../pages/Invoice/Stock";
 import Check from "../pages/Invoice/Check";
+import Employee from "../pages/Employee/Employee";
+import EmployeeSchedule from "../pages/Employee/EmployeeSchedule";
 
 const AppRoutes = () => {
     const token = localStorage.getItem("accessToken");
@@ -40,7 +41,8 @@ const AppRoutes = () => {
         <Route path="warehouse" element={<Warehouse />} />
         <Route path="stock-invoice" element={<Stock />} />
         <Route path="check-invoice" element={<Check />} />
-        <Route path="staffs" element={<Staffs />} />
+        <Route path="employee" element={<Employee />} />
+        <Route path="schedule" element={<EmployeeSchedule />} />
       </Route>
       <Route path="*"element={token ? <Navigate to="/dashboard" replace /> : <Navigate to="/login" replace />}/>
     </Routes>
