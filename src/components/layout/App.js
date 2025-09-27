@@ -4,7 +4,7 @@ import {
   MenuUnfoldOutlined,
   UserOutlined,
   LogoutOutlined,
-  RiseOutlined,
+  FundOutlined,
   ProductOutlined,
   SettingOutlined,
   BellOutlined,
@@ -13,7 +13,8 @@ import {
   UserSwitchOutlined,
   FileDoneOutlined,
   ApartmentOutlined,
-  IdcardOutlined
+  IdcardOutlined,
+  AppstoreOutlined
 } from '@ant-design/icons';
 import {
   Button,
@@ -63,8 +64,9 @@ const App = () => {
     if (pathname.startsWith('/check-invoice')) return { selectedKey: '7-3', openKeys: ['7'] };
     if (pathname.startsWith('/employee')) return { selectedKey: '8-1', openKeys: [] };
     if (pathname.startsWith('/schedule')) return { selectedKey: '8-2', openKeys: [] };
-    // if (pathname.startsWith('/employee')) return { selectedKey: '8-3', openKeys: [] };
     if (pathname.startsWith('/user')) return { selectedKey: '9', openKeys: [] };
+    if (pathname.startsWith('/item-shopee-list')) return { selectedKey: '11-1', openKeys: [] };
+    if (pathname.startsWith('/item-tiktok-list')) return { selectedKey: '11-2', openKeys: [] };
     return { selectedKey: '1', openKeys: [] };
   };
 
@@ -113,14 +115,44 @@ const App = () => {
           selectedKeys={[selectedKey]}
           openKeys={openKeys}
           onOpenChange={setOpenKeys}
-          style={{ fontSize: 16, marginTop: 50 }}
+          style={{
+            fontSize: 18,
+            padding: '0 12px',
+            marginTop: 30,
+          }}
           items={[
-            { key: '1', icon: <RiseOutlined style={{ fontSize: 20 }} />, label: <Link to="/dashboard">Dashboard</Link> },
-            { key: '2', icon: <BlockOutlined style={{ fontSize: 20 }} />, label: <Link to="/brand">Thương Hiệu</Link> },
-            { key: '3', icon: <ApartmentOutlined style={{ fontSize: 20 }} />, label: <Link to="/category">Danh Mục</Link> },
+            {
+              key: '1', icon: <FundOutlined style={{
+                height: 56,
+                lineHeight: '56px',
+                margin: '6px 0',
+                borderRadius: 8,
+              }} />, label: <Link to="/dashboard">Thống Kê</Link>
+            },
+            {
+              key: '2', icon: <BlockOutlined style={{
+                height: 56,
+                lineHeight: '56px',
+                margin: '6px 0',
+                borderRadius: 8,
+              }} />, label: <Link to="/brand">Thương Hiệu</Link>
+            },
+            {
+              key: '3', icon: <ApartmentOutlined style={{
+                height: 56,
+                lineHeight: '56px',
+                margin: '6px 0',
+                borderRadius: 8,
+              }} />, label: <Link to="/category">Danh Mục</Link>
+            },
             {
               key: '4',
-              icon: <ProductOutlined style={{ fontSize: 20 }} />,
+              icon: <AppstoreOutlined style={{
+                height: 56,
+                lineHeight: '56px',
+                margin: '6px 0',
+                borderRadius: 8,
+              }} />,
               label: 'Sản Phẩm',
               children: [
                 { key: '4-1', label: <Link to="/product">Sản Phẩm</Link> },
@@ -128,8 +160,27 @@ const App = () => {
               ],
             },
             {
+              key: '11',
+              icon: <ProductOutlined style={{
+                height: 56,
+                lineHeight: '56px',
+                margin: '6px 0',
+                borderRadius: 8,
+              }} />,
+              label: 'Sản Phẩm Mở Rộng',
+              children: [
+                { key: '11-1', label: <Link to="/item-shopee-list">Shopee</Link>, disabled: true },
+                { key: '11-2', label: <Link to="/item-tiktok-list">TikTok</Link>, disabled: true },
+              ],
+            },
+            {
               key: '5',
-              icon: <UsergroupAddOutlined style={{ fontSize: 20 }} />,
+              icon: <UsergroupAddOutlined style={{
+                height: 56,
+                lineHeight: '56px',
+                margin: '6px 0',
+                borderRadius: 8,
+              }} />,
               label: 'Khách Hàng',
               children: [
                 { key: '5-1', label: <Link to="/customer">Danh Sách</Link> },
@@ -138,7 +189,12 @@ const App = () => {
             },
             {
               key: '6',
-              icon: <UserSwitchOutlined style={{ fontSize: 20 }} />,
+              icon: <UserSwitchOutlined style={{
+                height: 56,
+                lineHeight: '56px',
+                margin: '6px 0',
+                borderRadius: 8,
+              }} />,
               label: 'Nhà Cung Cấp',
               children: [
                 { key: '6-1', label: <Link to="/vendor">Danh Sách</Link> },
@@ -147,7 +203,12 @@ const App = () => {
             },
             {
               key: '7',
-              icon: <FileDoneOutlined style={{ fontSize: 20 }} />,
+              icon: <FileDoneOutlined style={{
+                height: 56,
+                lineHeight: '56px',
+                margin: '6px 0',
+                borderRadius: 8,
+              }} />,
               label: 'Kho Hàng',
               children: [
                 { key: '7-1', label: <Link to="/warehouse">Kho</Link> },
@@ -156,16 +217,35 @@ const App = () => {
               ],
             },
             {
-              key: '8', icon: <IdcardOutlined style={{ fontSize: 20 }} />,
+              key: '8', icon: <IdcardOutlined style={{
+                height: 56,
+                lineHeight: '56px',
+                margin: '6px 0',
+                borderRadius: 8,
+              }} />,
               label: 'Nhân Viên',
               children: [
                 { key: '8-1', label: <Link to="/employee">Nhân Viên</Link> },
-                { key: '8-2', label: <Link to="/schedule">Lịch Làm Việc</Link> },
+                { key: '8-2', label: <Link to="/schedule">Lịch Làm Việc</Link>, disabled: true },
                 { key: '8-3', label: <Link to="/stock-invoice">Bảng Lương</Link>, disabled: true },
               ],
             },
-            { key: '9', icon: <UserOutlined style={{ fontSize: 20 }} />, label: <Link to="/user">Quản Lý Tài Khoản</Link> },
-            { key: '10', icon: <SettingOutlined style={{ fontSize: 20 }} />, label: 'Setting', disabled: true },
+            {
+              key: '9', icon: <UserOutlined style={{
+                height: 56,
+                lineHeight: '56px',
+                margin: '6px 0',
+                borderRadius: 8,
+              }} />, label: <Link to="/user">Quản Lý Tài Khoản</Link>
+            },
+            {
+              key: '10', icon: <SettingOutlined style={{
+                height: 56,
+                lineHeight: '56px',
+                margin: '6px 0',
+                borderRadius: 8,
+              }} />, label: 'Setting', disabled: true
+            },
           ]}
         />
       </Sider>

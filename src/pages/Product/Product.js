@@ -319,9 +319,9 @@ const Product = () => {
               placeholder="Tìm theo tên"
               value={searchText}
               onChange={(e) => setSearchText(e.target.value)}
+              onPressEnter={handleSearch} 
               style={{ width: 200 }}
             />
-            <Button type="primary" onClick={handleSearch}>Lọc</Button>
             <Button type="primary" onClick={handleCreate}>Thêm mới</Button>
             <Dropdown
               overlay={

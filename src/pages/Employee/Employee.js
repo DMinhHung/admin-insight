@@ -1,234 +1,221 @@
 import React, { useState, useEffect, useRef } from 'react';
 import {
     Table, Typography, Input, Button, Space, message,
-    Row, Col, Tag, Modal, Form, Select, Upload, DatePicker
+    Row, Modal, Form, Select, Upload, DatePicker, Col, Dropdown
 } from 'antd';
 import {
-    EditOutlined, DeleteOutlined, PlusOutlined, ReloadOutlined
+    EditOutlined, DeleteOutlined, PlusOutlined,
+    FilterOutlined, SettingOutlined
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
+import axios from 'axios';
+import ColumnVisibility from '../../components/ColumnVisibility';
+
 
 const { Title } = Typography;
 const { confirm } = Modal;
+const { Option } = Select;
+const { RangePicker } = DatePicker;
+
+const positionText = (val) => {
+    switch (val) {
+        case 1: return 'Giám đốc';
+        case 2: return 'Quản lý';
+        case 3: return 'Nhân viên';
+        default: return '';
+    }
+};
 
 const Employee = () => {
     const [searchText, setSearchText] = useState('');
     const [data, setData] = useState([]);
     const [loading, setLoading] = useState(false);
     const [isModalVisible, setIsModalVisible] = useState(false);
-    const [form] = Form.useForm();
-    const [editingUser, setEditingUser] = useState(null);
+    const [isFilterVisible, setIsFilterVisible] = useState(false);
+    const [editingId, setEditingId] = useState(null);
     const [thumbnailList, setThumbnailList] = useState([]);
+    const [form] = Form.useForm();
+    const [filterForm] = Form.useForm();
     const token = localStorage.getItem('accessToken');
     const hasFetched = useRef(false);
+    const baseURL = process.env.REACT_APP_ADMIN_INSIGHT_URL;
 
-    const fetchUsers = async (usernameSearch = '') => {
+    const api = axios.create({
+        baseURL,
+        headers: { Authorization: `Bearer ${token}` },
+    });
+
+    const fetchEmployees = async (params = {}) => {
         setLoading(true);
         try {
-            const res = await fetch(
-                `${process.env.REACT_APP_ADMIN_INSIGHT_URL}/api/v1/admin/user/form${usernameSearch ? `?username=${usernameSearch}` : ''}`,
-                {
-                    headers: {
-                        'Content-Type': 'application/json',
-                        Authorization: `Bearer ${token}`,
-                    },
-                }
-            );
-            if (!res.ok) throw new Error('Không thể tải danh sách người dùng');
-            const data = await res.json();
-            const users = data?.data?.items ?? [];
+            const query = new URLSearchParams(params).toString();
+            const res = await api.get(`/api/v1/admin/employee/form${query ? `?${query}` : ''}`);
+            const employee = res?.data?.data?.items ?? [];
             setData(
-                users.map(u => ({
-                    key: u.id,
-                    username: u.username,
-                    email: u.email,
-                    role: u.role,
-                    status: u.status,
-                    logged_at: u.logged_at,
+                employee.map(emp => ({
+                    id: emp.id,
+                    key: emp.id,
+                    username: emp.username,
+                    full_name: emp.full_name,
+                    email: emp.email,
+                    phone: emp.phone,
+                    position: emp.position,
+                    thumbnail: emp.thumbnail,
+                    address: emp.address,
+                    gender: emp.gender,
+                    birthday: emp.birthday,
+                    start_date: emp.start_date,
+                    status: emp.status
                 }))
             );
         } catch (err) {
-            message.error(err.message);
+            message.error(err.message || 'Không thể tải danh sách');
         } finally {
             setLoading(false);
         }
     };
 
     useEffect(() => {
-        if (hasFetched.current) return;
-        hasFetched.current = true;
-        fetchUsers();
+        if (!hasFetched.current) {
+            hasFetched.current = true;
+            fetchEmployees();
+        }
     }, []);
 
-    const handleSearch = () => fetchUsers(searchText);
+    const handleSave = async () => {
+        try {
+            const values = await form.validateFields();
+            if (!values.thumbnail) {
+                message.error('Vui lòng tải ảnh đại diện');
+                return;
+            }
 
-    const handleCreate = () => {
-        setEditingUser(null);
-        form.resetFields();
+            const payload = {
+                ...values,
+                birthday: values.birthday?.format('YYYY-MM-DD'),
+                start_date: values.start_date?.format('YYYY-MM-DD')
+            };
+
+            const url = editingId
+                ? `${baseURL}/api/v1/admin/employee/form/update`
+                : `${baseURL}/api/v1/admin/employee/form/create`;
+
+            const res = await fetch(url, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    Authorization: `Bearer ${token}`
+                },
+                body: JSON.stringify(editingId ? { ...payload, id: editingId } : payload)
+            });
+
+            const json = await res.json();
+            if (!res.ok) throw new Error(json?.message || 'Lưu thất bại');
+
+            message.success(editingId ? 'Cập nhật nhân viên thành công' : 'Thêm nhân viên thành công');
+            setIsModalVisible(false);
+            setEditingId(null);
+            form.resetFields();
+            setThumbnailList([]);
+            fetchEmployees();
+        } catch (err) {
+            message.error(err.message);
+        }
+    };
+
+    const handleEdit = (record) => {
+        setEditingId(record.id);
         form.setFieldsValue({
-            code: generateCode(12),
+            ...record,
+            birthday: record.birthday ? dayjs(record.birthday) : null,
+            start_date: record.start_date ? dayjs(record.start_date) : null,
+            thumbnail: record.thumbnail,
+            thumbnail_path: record.thumbnail_path || ''
         });
+        setThumbnailList(
+            record.thumbnail ? [{ uid: '-1', url: record.thumbnail, name: 'thumb' }] : []
+        );
         setIsModalVisible(true);
     };
 
-    const handleEdit = async (record) => {
-        try {
-            setLoading(true);
-            const res = await fetch(
-                `${process.env.REACT_APP_ADMIN_INSIGHT_URL}/api/v1/admin/user/form/view?id=${record.key}`,
-                {
-                    headers: {
-                        'Content-Type': 'application/json',
-                        Authorization: `Bearer ${token}`,
-                    },
-                }
-            );
-            const data = await res.json();
-            if (!res.ok || !data) throw new Error(data?.message || 'Không lấy được dữ liệu người dùng');
-
-            const user = data?.data?.user || {};
-            const profile = data?.data?.user.profile || {};
-
-            const formValues = {
-                username: user.username,
-                email: user.email,
-                phone: user.phone,
-                role: user.role,
-                status: user.status,
-                firstname: profile.firstname,
-                lastname: profile.lastname,
-                gender: profile.gender,
-                code: profile.code,
-                thumbnail: profile.thumbnail,
-            };
-
-            setThumbnailList(
-                profile.thumbnail
-                    ? [{ uid: '-1', name: 'thumb.jpg', status: 'done', url: profile.thumbnail }]
-                    : []
-            );
-
-            setEditingUser(user.id);
-            form.setFieldsValue(formValues);
-            setIsModalVisible(true);
-        } catch (err) {
-            message.error(err.message);
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    const handleModalOk = async () => {
-        try {
-            const values = await form.validateFields();
-            setLoading(true);
-            let url = '';
-            let method = '';
-            if (editingUser) {
-                url = `${process.env.REACT_APP_ADMIN_INSIGHT_URL}/api/v1/admin/user/form/update?id=${editingUser}`;
-                method = 'POST';
-                values.id = editingUser;
-            } else {
-                url = `${process.env.REACT_APP_ADMIN_INSIGHT_URL}/api/v1/admin/user/form/create`;
-                method = 'POST';
-            }
-
-            const res = await fetch(url, {
-                method,
-                headers: {
-                    'Content-Type': 'application/json',
-                    Authorization: `Bearer ${token}`,
-                },
-                body: JSON.stringify(values),
-            });
-
-            const data = await res.json();
-            if (!res.ok || !data) throw new Error(data?.message || 'Thao tác thất bại');
-
-            message.success(editingUser ? 'Cập nhật người dùng thành công' : 'Tạo người dùng thành công');
-            setIsModalVisible(false);
-            form.resetFields();
-            setEditingUser(null);
-            fetchUsers();
-        } catch (err) {
-            message.error(err.message || 'Lỗi xác thực');
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    const handleDelete = async (id) => {
-        try {
-            setLoading(true);
-            const res = await fetch(
-                `${process.env.REACT_APP_ADMIN_INSIGHT_URL}/api/v1/admin/user/form/delete?id=${id}`,
-                {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        Authorization: `Bearer ${token}`,
-                    },
-                }
-            );
-            const data = await res.json();
-            if (!res.ok || !data) throw new Error(data?.message || 'Xóa thất bại');
-
-            setData(prev => prev.filter(item => item.key !== id));
-            message.success('Xóa người dùng thành công');
-        } catch (err) {
-            message.error(err.message || 'Không thể xóa');
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    const showDeleteConfirm = (record) => {
+    const handleDelete = (id) => {
         confirm({
-            title: 'Bạn có chắc muốn xóa người dùng này?',
-            content: `Tài khoản: ${record.username}`,
-            okText: 'Xác nhận',
-            okType: 'danger',
-            cancelText: 'Hủy',
-            onOk() { return handleDelete(record.key); },
+            title: 'Xóa nhân viên?',
+            onOk: async () => {
+                setLoading(true);
+                try {
+                    const res = await fetch(`${baseURL}/api/v1/admin/employee/form/delete`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            Authorization: `Bearer ${token}`
+                        },
+                        body: JSON.stringify({ id })
+                    });
+                    const json = await res.json();
+                    if (!res.ok) throw new Error(json?.message || 'Xóa thất bại');
+                    setData(prev => prev.filter(e => e.id !== id));
+                    message.success('Đã xóa');
+                } catch (err) {
+                    message.error(err.message);
+                } finally {
+                    setLoading(false);
+                }
+            }
         });
     };
 
-    const generateCode = (length = 12) =>
-        Array.from({ length }, () => Math.floor(Math.random() * 10)).join('');
+    const handleFilter = async () => {
+        try {
+            const values = await filterForm.validateFields();
+            const range = values.startRange || [];
+            const params = {
+                username: searchText.trim(),
+                gender: values.gender,
+                startFrom: range[0] ? range[0].format('YYYY-MM-DD') : undefined,
+                startTo: range[1] ? range[1].format('YYYY-MM-DD') : undefined
+            };
+            setIsFilterVisible(false);
+            fetchEmployees(params);
+        } catch (err) {
+            message.error(err.message);
+        }
+    };
+
+    const defaultVisible = ['thumbnail', 'full_name', 'email', 'phone', 'position', 'address', 'start_date', 'actions'];
+    const [visibleColumns, setVisibleColumns] = useState(defaultVisible);
 
     const columns = [
-        { title: 'Tên đăng nhập', dataIndex: 'username', sorter: (a, b) => a.username.localeCompare(b.username) },
-        { title: 'Email', dataIndex: 'email', sorter: (a, b) => a.email.localeCompare(b.email) },
         {
-            title: 'Vai trò',
-            dataIndex: 'role',
-            sorter: (a, b) => a.role.localeCompare(b.role),
-            render: (role) => {
-                let color = 'blue';
-                if (role === 'admin') color = 'red';
-                else if (role === 'manager') color = 'green';
-                else if (role === 'user') color = 'default';
-                return <Tag color={color}>{role.toUpperCase()}</Tag>;
-            },
+            title: 'Ảnh',
+            dataIndex: 'thumbnail',
+            render: url =>
+                url && <img src={url} alt="" style={{ width: 40, height: 40, objectFit: 'cover' }} />
         },
+        { title: 'Họ tên', dataIndex: 'full_name' },
+        { title: 'Tên đăng nhập', dataIndex: 'username' },
+        { title: 'Email', dataIndex: 'email' },
+        { title: 'Điện thoại', dataIndex: 'phone' },
         {
-            title: 'Trạng thái',
-            dataIndex: 'status',
-            sorter: (a, b) => a.status - b.status,
-            render: value => value === 1 ? <Tag color="green">Hoạt động</Tag> : <Tag color="red">Ngưng</Tag>
+            title: 'Chức vụ',
+            dataIndex: 'position',
+            render: val => positionText(val)
         },
+        { title: 'Địa chỉ', dataIndex: 'address' },
         {
-            title: 'Đăng nhập gần nhất',
-            dataIndex: 'logged_at',
-            sorter: (a, b) => new Date(a.logged_at) - new Date(b.logged_at)
+            title: 'Giới tính',
+            dataIndex: 'gender',
+            render: g => (g === 1 ? 'Nam' : g === 2 ? 'Nữ' : 'Khác')
         },
+        { title: 'Ngày sinh', dataIndex: 'birthday' },
+        { title: 'Ngày vào làm', dataIndex: 'start_date' },
         {
-            title: 'Hành động',
+            title: 'Thao tác',
             key: 'actions',
             render: (_, record) => (
                 <Space size="middle">
-                    <Button type="primary" icon={<EditOutlined />} onClick={() => handleEdit(record)}>Sửa</Button>
-                    <Button danger icon={<DeleteOutlined />} onClick={() => showDeleteConfirm(record)}>Xóa</Button>
+                    <Button type="primary" icon={<EditOutlined />} onClick={() => handleEdit(record)} />
+                    <Button danger icon={<DeleteOutlined />} onClick={() => handleDelete(record)} />
                 </Space>
             )
         }
@@ -236,55 +223,68 @@ const Employee = () => {
 
     return (
         <div style={{ padding: 24 }}>
-            <Row justify="space-between" align="middle" style={{ marginBottom: 24 }}>
-                <Col><Title level={2}>Nhân Viên</Title></Col>
-                <Col>
-                    <Space>
-                        <Input
-                            placeholder="Tìm theo tên đăng nhập..."
-                            value={searchText}
-                            onChange={e => setSearchText(e.target.value)}
-                            style={{ width: 220 }}
-                            onPressEnter={handleSearch}
-                        />
-                        <Button type="primary" onClick={handleCreate}>Thêm mới</Button>
-                    </Space>
-                </Col>
+            <Row justify="space-between" style={{ marginBottom: 16 }}>
+                <Title level={2}>Nhân viên</Title>
+                <Space>
+                    <Input
+                        placeholder="Tìm theo username"
+                        value={searchText}
+                        onChange={e => setSearchText(e.target.value)}
+                        onPressEnter={() => fetchEmployees({ username: searchText })}
+                        style={{ width: 200 }}
+                    />
+                    <Button icon={<FilterOutlined />} onClick={() => setIsFilterVisible(true)}>
+                        Lọc
+                    </Button>
+                    <Button
+                        type="primary"
+                        icon={<PlusOutlined />}
+                        onClick={() => {
+                            form.resetFields();
+                            setThumbnailList([]);
+                            setIsModalVisible(true);
+                        }}
+                    >
+                        Thêm mới
+                    </Button>
+                    <Dropdown
+                        overlay={
+                            <ColumnVisibility
+                                columns={columns}
+                                visibleColumns={visibleColumns}
+                                onChange={setVisibleColumns}
+                            />
+                        }
+                        trigger={['click']}
+                    >
+                        <Button icon={<SettingOutlined />}>Chọn cột</Button>
+                    </Dropdown>
+                </Space>
             </Row>
 
-            <Table columns={columns} dataSource={data} loading={loading} />
+            <Table
+                columns={columns.filter(c => visibleColumns.includes(c.dataIndex || c.key))}
+                dataSource={data}
+                loading={loading}
+                rowKey="id"
+            />
 
             <Modal
-                title={editingUser ? 'Chỉnh sửa người dùng' : 'Thêm người dùng'}
                 open={isModalVisible}
-                onCancel={() => {
-                    setIsModalVisible(false);
-                    form.resetFields();
-                    setEditingUser(null);
-                    setThumbnailList([]);
-                }}
-                onOk={handleModalOk}
-                okText={editingUser ? 'Cập nhật' : 'Tạo mới'}
+                onCancel={() => { setIsModalVisible(false); setEditingId(null); }}
+                onOk={handleSave}
+                title={editingId ? 'Cập nhật nhân viên' : 'Thêm nhân viên'}
                 width={800}
             >
                 <Form form={form} layout="vertical">
-                    <Title level={4}>Thông tin tài khoản</Title>
                     <Row gutter={16}>
                         <Col span={12}>
-                            <Form.Item
-                                name="username"
-                                label="Tên đăng nhập"
-                                rules={[{ required: true, message: 'Nhập tên đăng nhập' }]}
-                            >
+                            <Form.Item name="username" label="Tên đăng nhập" rules={[{ required: true, message: 'Bắt buộc' }]}>
                                 <Input />
                             </Form.Item>
                         </Col>
                         <Col span={12}>
-                            <Form.Item
-                                name="email"
-                                label="Email"
-                                rules={[{ required: true, type: 'email', message: 'Nhập email hợp lệ' }]}
-                            >
+                            <Form.Item name="full_name" label="Họ tên" rules={[{ required: true, message: 'Bắt buộc' }]}>
                                 <Input />
                             </Form.Item>
                         </Col>
@@ -292,28 +292,30 @@ const Employee = () => {
 
                     <Row gutter={16}>
                         <Col span={12}>
-                            <Form.Item name="password" label="Mật khẩu">
-                                <Input.Password autoComplete="new-password" />
+                            <Form.Item name="email" label="Email" rules={[{ type: 'email', message: 'Email không hợp lệ' }]}>
+                                <Input />
                             </Form.Item>
                         </Col>
                         <Col span={12}>
-                            <Form.Item name="phone" label="Số điện thoại">
+                            <Form.Item name="phone" label="Điện thoại">
                                 <Input />
                             </Form.Item>
                         </Col>
                     </Row>
 
-                    {/* --- Thông tin cá nhân --- */}
-                    <Title level={4}>Thông tin cá nhân</Title>
                     <Row gutter={16}>
                         <Col span={12}>
-                            <Form.Item name="firstname" label="Họ" rules={[{ required: true, message: 'Nhập họ' }]}>
-                                <Input />
+                            <Form.Item name="position" label="Chức vụ">
+                                <Select placeholder="Chọn chức vụ">
+                                    <Option value={1}>Giám đốc</Option>
+                                    <Option value={2}>Quản lý</Option>
+                                    <Option value={3}>Nhân viên</Option>
+                                </Select>
                             </Form.Item>
                         </Col>
                         <Col span={12}>
-                            <Form.Item name="lastname" label="Tên" rules={[{ required: true, message: 'Nhập tên' }]}>
-                                <Input />
+                            <Form.Item name="address" label="Địa chỉ">
+                                <Input.TextArea rows={2} />
                             </Form.Item>
                         </Col>
                     </Row>
@@ -322,91 +324,55 @@ const Employee = () => {
                         <Col span={12}>
                             <Form.Item name="gender" label="Giới tính">
                                 <Select placeholder="Chọn giới tính">
-                                    <Select.Option value={0}>Khác</Select.Option>
-                                    <Select.Option value={1}>Nam</Select.Option>
-                                    <Select.Option value={2}>Nữ</Select.Option>
+                                    <Option value={1}>Nam</Option>
+                                    <Option value={2}>Nữ</Option>
+                                    <Option value={3}>Khác</Option>
                                 </Select>
                             </Form.Item>
                         </Col>
-                        {/* <Col span={12}>
-                  <Form.Item
-                    name="start_date"
-                    label="Ngày vào làm"
-                    rules={[{ required: true, message: 'Chọn ngày vào làm' }]}
-                  >
-                    <DatePicker
-                      style={{ width: '100%' }}
-                      format="YYYY-MM-DD"
-                      disabledDate={d => d && d > dayjs()}
-                    />
-                  </Form.Item>
-                </Col> */}
+                        <Col span={12}>
+                            <Form.Item name="birthday" label="Ngày sinh">
+                                <DatePicker format="YYYY-MM-DD" style={{ width: '100%' }} />
+                            </Form.Item>
+                        </Col>
                     </Row>
 
-                    {/* --- Công việc & Quyền --- */}
-                    <Title level={4}>Công việc & Quyền</Title>
                     <Row gutter={16}>
                         <Col span={12}>
-                            <Form.Item name="role" label="Vai trò" rules={[{ required: true, message: 'Chọn vai trò' }]}>
-                                <Select placeholder="Chọn vai trò">
-                                    <Select.Option value="user">User</Select.Option>
-                                    <Select.Option value="admin">Admin</Select.Option>
-                                    <Select.Option value="manager">Manager</Select.Option>
-                                </Select>
+                            <Form.Item name="start_date" label="Ngày vào làm">
+                                <DatePicker format="YYYY-MM-DD" style={{ width: '100%' }} />
                             </Form.Item>
                         </Col>
                         <Col span={12}>
-                            <Form.Item
-                                name="code"
-                                label="Mã Nhân Viên"
-                                rules={[{ required: true, message: 'Nhập hoặc random mã' }]}
-                            >
-                                <Input
-                                    placeholder="Tự động / Nhập thủ công"
-                                    addonAfter={
-                                        <Button
-                                            icon={<ReloadOutlined />}
-                                            size="small"
-                                            onClick={() => form.setFieldsValue({ code: generateCode(12) })}
-                                        />
+                            <Title level={4}>Ảnh đại diện</Title>
+                            <Upload
+                                name="file"
+                                listType="picture-card"
+                                maxCount={1}
+                                accept="image/*"
+                                action={`${baseURL}/api/v1/general/upload/create`}
+                                headers={{ Authorization: `Bearer ${token}` }}
+                                fileList={thumbnailList}
+                                onChange={({ fileList }) => {
+                                    setThumbnailList(fileList);
+                                    const done = fileList.find(f => f.status === 'done');
+                                    if (done?.response?.data) {
+                                        const { url, path } = done.response.data;
+                                        form.setFieldsValue({ thumbnail: url, thumbnail_path: path });
                                     }
-                                />
-                            </Form.Item>
-
+                                }}
+                            >
+                                {thumbnailList.length < 1 && (
+                                    <div>
+                                        <PlusOutlined />
+                                        <div style={{ marginTop: 8 }}>Tải ảnh</div>
+                                    </div>
+                                )}
+                            </Upload>
+                            <Form.Item name="thumbnail" hidden><Input /></Form.Item>
+                            <Form.Item name="thumbnail_path" hidden><Input /></Form.Item>
                         </Col>
                     </Row>
-
-                    <Title level={4}>Ảnh đại diện</Title>
-                    <Form.Item
-                        name="thumbnail"
-                        label="Chọn ảnh"
-                        rules={[{ required: true, message: 'Vui lòng tải ảnh' }]}
-                    >
-                        <Upload
-                            name="file"
-                            listType="picture-card"
-                            maxCount={1}
-                            accept="image/*"
-                            action={`${process.env.REACT_APP_ADMIN_INSIGHT_URL}/api/v1/general/upload/create`}
-                            headers={{ Authorization: `Bearer ${token}` }}
-                            fileList={thumbnailList}
-                            onChange={({ fileList }) => {
-                                setThumbnailList(fileList);
-                                const done = fileList.find(f => f.status === 'done');
-                                if (done?.response?.data) {
-                                    const { url, path } = done.response.data;
-                                    form.setFieldsValue({ thumbnail: url, thumbnail_path: path });
-                                }
-                            }}
-                        >
-                            {thumbnailList.length < 1 && (
-                                <div>
-                                    <PlusOutlined />
-                                    <div style={{ marginTop: 8 }}>Tải ảnh</div>
-                                </div>
-                            )}
-                        </Upload>
-                    </Form.Item>
                 </Form>
             </Modal>
         </div>
