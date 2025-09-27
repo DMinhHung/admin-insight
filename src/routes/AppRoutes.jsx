@@ -1,5 +1,5 @@
 import "../assets/css/style.css";
-import { Routes, Route, Navigate  } from "react-router-dom";
+import { Routes, Route, Navigate } from "react-router-dom";
 import Product from "../pages/Product/Product";
 import Customers from "../pages/Customers/Customers";
 import Dashboard from "../pages/Dashboard/Dashboard";
@@ -19,13 +19,32 @@ import Stock from "../pages/Invoice/Stock";
 import Check from "../pages/Invoice/Check";
 import Employee from "../pages/Employee/Employee";
 import EmployeeSchedule from "../pages/Employee/EmployeeSchedule";
+import { ForgotPassword } from "../pages/Login/ForgetPassword";
+import { VerifyOtp } from "../pages/Login/VerifyOtp";
+import { ResetPassword } from "../pages/Login/ResetPassword";
 
 const AppRoutes = () => {
-    const token = localStorage.getItem("accessToken");
-    return (
+  const token = localStorage.getItem("accessToken");
+
+  return (
     <Routes>
-      <Route path="/login"element={token ? <Navigate to="/dashboard" replace /> : <Login />}/>
-      <Route path="/"element={<RequireAuth><App /></RequireAuth>}>
+      <Route
+        path="/login"
+        element={token ? <Navigate to="/dashboard" replace /> : <Login />}
+      />
+
+      <Route path="/forgot-password" element={<ForgotPassword />} />
+      <Route path="/verify-otp" element={<VerifyOtp />} />
+      <Route path="/reset-password" element={<ResetPassword />} />
+
+      <Route
+        path="/"
+        element={
+          <RequireAuth>
+            <App />
+          </RequireAuth>
+        }
+      >
         <Route index element={<Navigate to="dashboard" replace />} />
         <Route path="dashboard" element={<Dashboard />} />
         <Route path="brand" element={<Brand />} />
@@ -44,8 +63,20 @@ const AppRoutes = () => {
         <Route path="employee" element={<Employee />} />
         <Route path="schedule" element={<EmployeeSchedule />} />
       </Route>
-      <Route path="*"element={token ? <Navigate to="/dashboard" replace /> : <Navigate to="/login" replace />}/>
+
+      {/* Fallback */}
+      <Route
+        path="*"
+        element={
+          token ? (
+            <Navigate to="/dashboard" replace />
+          ) : (
+            <Navigate to="/login" replace />
+          )
+        }
+      />
     </Routes>
   );
 };
+
 export default AppRoutes;

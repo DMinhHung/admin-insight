@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Form, Input, Button, Typography, Alert } from 'antd';
 import { useNavigate } from 'react-router-dom';
 
-const { Title } = Typography;
+const { Title, Text } = Typography;
 
 export default function Login() {
   const [loading, setLoading] = useState(false);
@@ -12,14 +12,8 @@ export default function Login() {
   useEffect(() => {
     const token = localStorage.getItem('accessToken');
     const expiryTime = localStorage.getItem('tokenExpiry');
-
-    if (token && expiryTime) {
-      if (Date.now() > parseInt(expiryTime)) {
-        localStorage.removeItem('accessToken');
-        localStorage.removeItem('tokenExpiry');
-      } else {
-        navigate('/dashboard');
-      }
+    if (token && expiryTime && Date.now() < parseInt(expiryTime)) {
+      navigate('/dashboard');
     }
   }, [navigate]);
 
@@ -32,10 +26,7 @@ export default function Login() {
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            email: values.email,
-            password: values.password,
-          }),
+          body: JSON.stringify(values),
         }
       );
 
@@ -44,16 +35,11 @@ export default function Login() {
       const token = data?.data?.user?.token;
 
       if (token) {
-        const expiresIn = 24 * 60 * 60 * 1000;
-        const expiryTime = Date.now() + expiresIn;
-
+        const expiryTime = Date.now() + 24 * 60 * 60 * 1000;
         localStorage.setItem('accessToken', token);
         localStorage.setItem('tokenExpiry', expiryTime);
         const userId = data?.data?.user?.id;
-        if (userId) {
-          localStorage.setItem('userId', userId);
-        }
-
+        if (userId) localStorage.setItem('userId', userId);
         navigate('/dashboard');
       }
     } catch (e) {
@@ -66,57 +52,105 @@ export default function Login() {
   return (
     <div
       style={{
+        minHeight: '100vh',
+        background: 'linear-gradient(135deg, #e0eafc 0%, #cfdef3 100%)',
         display: 'flex',
         justifyContent: 'center',
         alignItems: 'center',
-        height: '100vh',
-        background: '#f0f2f5',
+        padding: 16,
       }}
     >
       <div
         style={{
-          width: 320,
-          padding: 24,
+          width: '100%',
+          maxWidth: 400,
           background: '#fff',
-          borderRadius: 8,
-          boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+          borderRadius: 20,
+          padding: '40px 30px',
+          boxShadow: '0 20px 40px rgba(0,0,0,0.2)',
+          textAlign: 'center',
         }}
       >
-        <Title level={3} style={{ textAlign: 'center' }}>
-          Đăng nhập
-        </Title>
+        {/* Logo / Title */}
+        <div style={{ marginBottom: 24 }}>
+          <img
+            src="https://cdn-icons-png.flaticon.com/512/3135/3135715.png"
+            alt="logo"
+            style={{ width: 80, marginBottom: 12 }}
+          />
+          <Title level={3} style={{ margin: 0, color: '#333' }}>
+            Đăng nhập
+          </Title>
+          <Text type="secondary">Chào mừng bạn trở lại 👋</Text>
+        </div>
 
         {error && (
-          <Alert message={error} type="error" style={{ marginBottom: 16 }} />
+          <Alert
+            message={error}
+            type="error"
+            showIcon
+            style={{ marginBottom: 20, textAlign: 'left' }}
+          />
         )}
 
         <Form
           name="login"
           onFinish={onLogin}
           layout="vertical"
+          requiredMark={false}
         >
           <Form.Item
             name="email"
-            label="Email"
-            rules={[{ required: true, message: 'Vui lòng nhập email!' }]}
+            label={<Text strong>Email</Text>}
+            rules={[
+              { required: true, message: 'Vui lòng nhập email!' },
+              { type: 'email', message: 'Email không hợp lệ!' },
+            ]}
           >
-            <Input placeholder="admin@example.com" />
+            <Input
+              size="large"
+              placeholder="admin@example.com"
+              style={{ borderRadius: 8 }}
+            />
           </Form.Item>
 
           <Form.Item
             name="password"
-            label="Mật khẩu"
+            label={<Text strong>Mật khẩu</Text>}
             rules={[{ required: true, message: 'Vui lòng nhập mật khẩu!' }]}
           >
-            <Input.Password placeholder="••••••" />
+            <Input.Password
+              size="large"
+              placeholder="••••••"
+              style={{ borderRadius: 8 }}
+            />
           </Form.Item>
 
-          <Form.Item>
-            <Button type="primary" htmlType="submit" block loading={loading}>
-              Đăng nhập
-            </Button>
-          </Form.Item>
+          <Button
+            type="primary"
+            htmlType="submit"
+            size="large"
+            loading={loading}
+            block
+            style={{
+              borderRadius: 8,
+              background: 'linear-gradient(90deg,#6a11cb,#2575fc)',
+              border: 'none',
+              fontWeight: 'bold',
+            }}
+          >
+            Đăng nhập
+          </Button>
         </Form>
+
+        <div style={{ marginTop: 24 }}>
+          <Text type="secondary">
+            Quên mật khẩu?{' '}
+            <a href="/forgot-password" style={{ color: '#2575fc', fontWeight: 500 }}>
+              Khôi phục ngay
+            </a>
+          </Text>
+        </div>
       </div>
     </div>
   );
