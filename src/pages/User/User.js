@@ -1,15 +1,14 @@
 import React, { useState, useEffect, useRef } from 'react';
 import {
   Table, Typography, Input, Button, Space, message,
-  Row, Col, Tag, Modal, Form, Select, Upload, DatePicker
+  Row, Col, Tag, Modal, Form, Select, Upload, DatePicker, Tabs
 } from 'antd';
-import {
-  EditOutlined, DeleteOutlined, PlusOutlined, ReloadOutlined
-} from '@ant-design/icons';
+import { EditOutlined, DeleteOutlined, PlusOutlined, ReloadOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
 
 const { Title } = Typography;
 const { confirm } = Modal;
+const { Option } = Select;
 
 const User = () => {
   const [searchText, setSearchText] = useState('');
@@ -27,26 +26,19 @@ const User = () => {
     try {
       const res = await fetch(
         `${process.env.REACT_APP_ADMIN_INSIGHT_URL}/api/v1/admin/user/form${usernameSearch ? `?username=${usernameSearch}` : ''}`,
-        {
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${token}`,
-          },
-        }
+        { headers: { Authorization: `Bearer ${token}` } }
       );
       if (!res.ok) throw new Error('Không thể tải danh sách người dùng');
       const data = await res.json();
       const users = data?.data?.items ?? [];
-      setData(
-        users.map(u => ({
-          key: u.id,
-          username: u.username,
-          email: u.email,
-          role: u.role,
-          status: u.status,
-          logged_at: u.logged_at,
-        }))
-      );
+      setData(users.map(u => ({
+        key: u.id,
+        username: u.username,
+        email: u.email,
+        role: u.role,
+        status: u.status,
+        logged_at: u.logged_at,
+      })));
     } catch (err) {
       message.error(err.message);
     } finally {
@@ -65,9 +57,7 @@ const User = () => {
   const handleCreate = () => {
     setEditingUser(null);
     form.resetFields();
-    form.setFieldsValue({
-      code: generateCode(12),
-    });
+    setThumbnailList([]);
     setIsModalVisible(true);
   };
 
@@ -76,15 +66,10 @@ const User = () => {
       setLoading(true);
       const res = await fetch(
         `${process.env.REACT_APP_ADMIN_INSIGHT_URL}/api/v1/admin/user/form/view?id=${record.key}`,
-        {
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${token}`,
-          },
-        }
+        { headers: { Authorization: `Bearer ${token}` } }
       );
       const data = await res.json();
-      if (!res.ok || !data) throw new Error(data?.message || 'Không lấy được dữ liệu người dùng');
+      if (!res.ok || !data) throw new Error(data?.message || 'Không lấy được dữ liệu');
 
       const user = data?.data?.user || {};
       const profile = data?.data?.user.profile || {};
@@ -102,11 +87,9 @@ const User = () => {
         thumbnail: profile.thumbnail,
       };
 
-      setThumbnailList(
-        profile.thumbnail
-          ? [{ uid: '-1', name: 'thumb.jpg', status: 'done', url: profile.thumbnail }]
-          : []
-      );
+      setThumbnailList(profile.thumbnail
+        ? [{ uid: '-1', name: 'thumb.jpg', status: 'done', url: profile.thumbnail }]
+        : []);
 
       setEditingUser(user.id);
       form.setFieldsValue(formValues);
@@ -122,23 +105,13 @@ const User = () => {
     try {
       const values = await form.validateFields();
       setLoading(true);
-      let url = '';
-      let method = '';
-      if (editingUser) {
-        url = `${process.env.REACT_APP_ADMIN_INSIGHT_URL}/api/v1/admin/user/form/update?id=${editingUser}`;
-        method = 'POST';
-        values.id = editingUser;
-      } else {
-        url = `${process.env.REACT_APP_ADMIN_INSIGHT_URL}/api/v1/admin/user/form/create`;
-        method = 'POST';
-      }
+      let url = editingUser
+        ? `${process.env.REACT_APP_ADMIN_INSIGHT_URL}/api/v1/admin/user/form/update?id=${editingUser}`
+        : `${process.env.REACT_APP_ADMIN_INSIGHT_URL}/api/v1/admin/user/form/create`;
 
       const res = await fetch(url, {
-        method,
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify(values),
       });
 
@@ -149,6 +122,7 @@ const User = () => {
       setIsModalVisible(false);
       form.resetFields();
       setEditingUser(null);
+      setThumbnailList([]);
       fetchUsers();
     } catch (err) {
       message.error(err.message || 'Lỗi xác thực');
@@ -162,13 +136,7 @@ const User = () => {
       setLoading(true);
       const res = await fetch(
         `${process.env.REACT_APP_ADMIN_INSIGHT_URL}/api/v1/admin/user/form/delete?id=${id}`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${token}`,
-          },
-        }
+        { method: 'POST', headers: { Authorization: `Bearer ${token}` } }
       );
       const data = await res.json();
       if (!res.ok || !data) throw new Error(data?.message || 'Xóa thất bại');
@@ -193,9 +161,6 @@ const User = () => {
     });
   };
 
-  const generateCode = (length = 12) =>
-    Array.from({ length }, () => Math.floor(Math.random() * 10)).join('');
-
   const columns = [
     { title: 'Tên đăng nhập', dataIndex: 'username', sorter: (a, b) => a.username.localeCompare(b.username) },
     { title: 'Email', dataIndex: 'email', sorter: (a, b) => a.email.localeCompare(b.email) },
@@ -204,10 +169,7 @@ const User = () => {
       dataIndex: 'role',
       sorter: (a, b) => a.role.localeCompare(b.role),
       render: (role) => {
-        let color = 'blue';
-        if (role === 'admin') color = 'red';
-        else if (role === 'manager') color = 'green';
-        else if (role === 'user') color = 'default';
+        let color = role === 'admin' ? 'red' : role === 'manager' ? 'green' : 'blue';
         return <Tag color={color}>{role.toUpperCase()}</Tag>;
       },
     },
@@ -226,9 +188,9 @@ const User = () => {
       title: 'Hành động',
       key: 'actions',
       render: (_, record) => (
-        <Space size="middle">
-          <Button type="primary" icon={<EditOutlined />} onClick={() => handleEdit(record)}>Sửa</Button>
-          <Button danger icon={<DeleteOutlined />} onClick={() => showDeleteConfirm(record)}>Xóa</Button>
+        <Space>
+          <Button type="primary" icon={<EditOutlined />} onClick={() => handleEdit(record)}></Button>
+          <Button danger icon={<DeleteOutlined />} onClick={() => showDeleteConfirm(record)}></Button>
         </Space>
       )
     }
@@ -265,31 +227,23 @@ const User = () => {
         }}
         onOk={handleModalOk}
         okText={editingUser ? 'Cập nhật' : 'Tạo mới'}
-        width={800}
+        width={1000}
+        bodyStyle={{ maxHeight: '80vh', overflowY: 'auto', paddingRight: 24 }}
+         maskClosable={false}
       >
         <Form form={form} layout="vertical">
-          <Title level={4}>Thông tin tài khoản</Title>
           <Row gutter={16}>
             <Col span={12}>
-              <Form.Item
-                name="username"
-                label="Tên đăng nhập"
-                rules={[{ required: true, message: 'Nhập tên đăng nhập' }]}
-              >
+              <Form.Item name="username" label="Tên đăng nhập" rules={[{ required: true }]}>
                 <Input />
               </Form.Item>
             </Col>
             <Col span={12}>
-              <Form.Item
-                name="email"
-                label="Email"
-                rules={[{ required: true, type: 'email', message: 'Nhập email hợp lệ' }]}
-              >
+              <Form.Item name="email" label="Email" rules={[{ required: true, type: 'email' }]}>
                 <Input />
               </Form.Item>
             </Col>
           </Row>
-
           <Row gutter={16}>
             <Col span={12}>
               <Form.Item name="password" label="Mật khẩu">
@@ -303,16 +257,14 @@ const User = () => {
             </Col>
           </Row>
 
-          {/* --- Thông tin cá nhân --- */}
-          <Title level={4}>Thông tin cá nhân</Title>
           <Row gutter={16}>
             <Col span={12}>
-              <Form.Item name="firstname" label="Họ" rules={[{ required: true, message: 'Nhập họ' }]}>
+              <Form.Item name="firstname" label="Họ" rules={[{ required: true }]}>
                 <Input />
               </Form.Item>
             </Col>
             <Col span={12}>
-              <Form.Item name="lastname" label="Tên" rules={[{ required: true, message: 'Nhập tên' }]}>
+              <Form.Item name="lastname" label="Tên" rules={[{ required: true }]}>
                 <Input />
               </Form.Item>
             </Col>
@@ -328,26 +280,8 @@ const User = () => {
                 </Select>
               </Form.Item>
             </Col>
-            {/* <Col span={12}>
-              <Form.Item
-                name="start_date"
-                label="Ngày vào làm"
-                rules={[{ required: true, message: 'Chọn ngày vào làm' }]}
-              >
-                <DatePicker
-                  style={{ width: '100%' }}
-                  format="YYYY-MM-DD"
-                  disabledDate={d => d && d > dayjs()}
-                />
-              </Form.Item>
-            </Col> */}
-          </Row>
-
-          {/* --- Công việc & Quyền --- */}
-          <Title level={4}>Công việc & Quyền</Title>
-          <Row gutter={16}>
             <Col span={12}>
-              <Form.Item name="role" label="Vai trò" rules={[{ required: true, message: 'Chọn vai trò' }]}>
+              <Form.Item name="role" label="Vai trò" rules={[{ required: true }]}>
                 <Select placeholder="Chọn vai trò">
                   <Select.Option value="user">User</Select.Option>
                   <Select.Option value="admin">Admin</Select.Option>
@@ -355,58 +289,54 @@ const User = () => {
                 </Select>
               </Form.Item>
             </Col>
-            <Col span={12}>
-              <Form.Item
-                name="code"
-                label="Mã Nhân Viên"
-                rules={[{ required: true, message: 'Nhập hoặc random mã' }]}
-              >
-                <Input
-                  placeholder="Tự động / Nhập thủ công"
-                  addonAfter={
-                    <Button
-                      icon={<ReloadOutlined />}
-                      size="small"
-                      onClick={() => form.setFieldsValue({ code: generateCode(12) })}
-                    />
-                  }
-                />
-              </Form.Item>
-
-            </Col>
           </Row>
 
-          <Title level={4}>Ảnh đại diện</Title>
-          <Form.Item
-            name="thumbnail"
-            label="Chọn ảnh"
-            rules={[{ required: true, message: 'Vui lòng tải ảnh' }]}
-          >
-            <Upload
-              name="file"
-              listType="picture-card"
-              maxCount={1}
-              accept="image/*"
-              action={`${process.env.REACT_APP_ADMIN_INSIGHT_URL}/api/v1/general/upload/create`}
-              headers={{ Authorization: `Bearer ${token}` }}
-              fileList={thumbnailList}
-              onChange={({ fileList }) => {
-                setThumbnailList(fileList);
-                const done = fileList.find(f => f.status === 'done');
-                if (done?.response?.data) {
-                  const { url, path } = done.response.data;
-                  form.setFieldsValue({ thumbnail: url, thumbnail_path: path });
-                }
-              }}
-            >
-              {thumbnailList.length < 1 && (
-                <div>
-                  <PlusOutlined />
-                  <div style={{ marginTop: 8 }}>Tải ảnh</div>
-                </div>
-              )}
-            </Upload>
-          </Form.Item>
+          <Row gutter={16}>
+            <Col span={12}>
+              <Form.Item
+                name="status"
+                label="Trạng Thái"
+                rules={[{ required: true, message: 'Select status' }]}
+              >
+                <Select placeholder="Select status" style={{ width: '100%' }}>
+                  <Select.Option value={1}>
+                    <span><Tag color="green">Hoạt động</Tag></span>
+                  </Select.Option>
+                  <Select.Option value={0}>
+                    <span><Tag color="red">Ngưng hoạt động</Tag></span>
+                  </Select.Option>
+                </Select>
+              </Form.Item>
+            </Col>
+            <Col span={12}>
+              <Form.Item name="thumbnail" label="Ảnh đại diện" rules={[{ required: true }]}>
+                <Upload
+                  name="file"
+                  listType="picture-card"
+                  maxCount={1}
+                  accept="image/*"
+                  action={`${process.env.REACT_APP_ADMIN_INSIGHT_URL}/api/v1/general/upload/create`}
+                  headers={{ Authorization: `Bearer ${token}` }}
+                  fileList={thumbnailList}
+                  onChange={({ fileList }) => {
+                    setThumbnailList(fileList);
+                    const done = fileList.find(f => f.status === 'done');
+                    if (done?.response?.data) {
+                      const { url, path } = done.response.data;
+                      form.setFieldsValue({ thumbnail: url, thumbnail_path: path });
+                    }
+                  }}
+                >
+                  {thumbnailList.length < 1 && (
+                    <div>
+                      <PlusOutlined />
+                      <div style={{ marginTop: 8 }}>Tải ảnh</div>
+                    </div>
+                  )}
+                </Upload>
+              </Form.Item>
+            </Col>
+          </Row>
         </Form>
       </Modal>
     </div>

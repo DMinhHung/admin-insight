@@ -2,8 +2,10 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Table, Typography, Input, Button, Space, message, Row, Col, Tag, Form, Select, Image, InputNumber, Drawer } from 'antd';
 import { EditOutlined, DeleteOutlined, PlusOutlined, ReloadOutlined } from '@ant-design/icons';
 import axios from 'axios';
+import { Tabs } from 'antd';
 
 const { Title } = Typography;
+const { TabPane } = Tabs
 
 const Check = () => {
     const [searchText, setSearchText] = useState('');
@@ -63,7 +65,7 @@ const Check = () => {
 
     const fetchProduct = async () => {
         try {
-            const res = await api.get(`/api/v1/admin/product/form`);
+            const res = await api.get(`/api/v1/admin/product/item-variant/list`);
             setProducts(res?.data?.data?.items || []);
         } catch (err) {
             message.error(err.message || 'Không thể tải sản phẩm');
@@ -200,7 +202,7 @@ const Check = () => {
         { title: 'Mô tả', dataIndex: 'value' },
         { title: 'Trạng thái', dataIndex: 'status', render: value => value === 1 ? <Tag color="green">Active</Tag> : <Tag color="red">Inactive</Tag> },
         {
-            title: 'Actions', key: 'actions', render: (_, record) => (
+            title: 'Hành động', key: 'actions', render: (_, record) => (
                 <Space>
                     <Button type="primary" icon={<EditOutlined />} onClick={() => handleEdit(record)} />
                     <Button danger icon={<DeleteOutlined />} onClick={() => handleDelete(record.key)} />
@@ -242,10 +244,75 @@ const Check = () => {
                     </Space>
                 }
             >
-                <Form form={form} layout="vertical">
-                    <Row gutter={32}>
-                        <Col span={16}>
-                            <Title level={5}>Danh sách sản phẩm</Title>
+                <Tabs defaultActiveKey="1">
+                    {/* Thông tin phiếu */}
+                    <Tabs.TabPane tab="Thông tin phiếu" key="1">
+                        <Form form={form} layout="vertical">
+                            <Row gutter={16}>
+                                <Col span={12}>
+                                    <Form.Item name="code" label="Code" rules={[{ required: true, message: 'Nhập hoặc random' }]}>
+                                        <Input
+                                            placeholder="Tự động / Nhập thủ công"
+                                            addonAfter={<Button icon={<ReloadOutlined />} size="small" onClick={() => form.setFieldsValue({ code: generateCode(12) })} />}
+                                        />
+                                    </Form.Item>
+                                </Col>
+                                <Col span={12}>
+                                    <Form.Item name="status" label="Trạng thái" rules={[{ required: true, message: 'Chọn trạng thái' }]}>
+                                        <Select placeholder="Chọn trạng thái">
+                                            <Select.Option value={1}>Active</Select.Option>
+                                            <Select.Option value={2}>Inactive</Select.Option>
+                                        </Select>
+                                    </Form.Item>
+                                </Col>
+                            </Row>
+
+                            <Row gutter={16}>
+                                <Col span={12}>
+                                    <Form.Item name="warehouse_id" label="Chọn Kho" rules={[{ required: true, message: 'Chọn kho' }]}>
+                                        <Select placeholder="Chọn kho" showSearch optionFilterProp="children">
+                                            {warehouses.map(wh => <Select.Option key={wh.id} value={wh.id}>{wh.name}</Select.Option>)}
+                                        </Select>
+                                    </Form.Item>
+                                </Col>
+                                <Col span={12}>
+                                    <Form.Item label="Người tạo">
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                            {user?.profile?.thumbnail ? <Image src={user.profile.thumbnail} width={32} height={32} style={{ borderRadius: '50%' }} preview={false} /> : <div style={{ width: 32, height: 32, borderRadius: '50%', background: '#ccc' }} />}
+                                            <span>{user?.username || 'Unknown'}</span>
+                                        </div>
+                                    </Form.Item>
+                                </Col>
+                            </Row>
+
+                            <Form.Item name="note" label="Ghi chú">
+                                <Input.TextArea placeholder="Nhập ghi chú (nếu có)" rows={4} />
+                            </Form.Item>
+                        </Form>
+                    </Tabs.TabPane>
+
+                    <Tabs.TabPane tab="Danh sách sản phẩm" key="2">
+                        <Form form={form} layout="vertical">
+                            {/* Header cột */}
+                            <Row
+                                gutter={12}
+                                style={{
+                                    padding: 12,
+                                    marginBottom: 12,
+                                    borderBottom: '2px solid #d9d9d9',
+                                    fontWeight: 'bold',
+                                    background: '#f0f0f0',
+                                }}
+                            >
+                                <Col span={2}>Thumbnail</Col>
+                                <Col span={6}>Sản phẩm</Col>
+                                <Col span={3}>Số lượng hiện tại</Col>
+                                <Col span={3}>Số lượng hệ thống</Col>
+                                <Col span={3}>Chênh lệch</Col>
+                                <Col span={4}>Ghi chú</Col>
+                                <Col span={1}></Col>
+                            </Row>
+
                             <Form.List name="items">
                                 {(fields, { add, remove }) => (
                                     <>
@@ -255,8 +322,8 @@ const Check = () => {
                                                 gutter={12}
                                                 align="middle"
                                                 style={{
-                                                    marginBottom: 12,
                                                     padding: 12,
+                                                    marginBottom: 12,
                                                     border: '1px solid #d9d9d9',
                                                     borderRadius: 6,
                                                     background: '#fafafa',
@@ -275,7 +342,6 @@ const Check = () => {
                                                         }}
                                                     </Form.Item>
                                                 </Col>
-
                                                 <Col span={6}>
                                                     <Form.Item
                                                         {...restField}
@@ -286,24 +352,12 @@ const Check = () => {
                                                         <Select placeholder="Chọn sản phẩm" showSearch optionFilterProp="children">
                                                             {products.map(p => (
                                                                 <Select.Option key={p.id} value={p.id}>
-                                                                    <span
-                                                                        style={{
-                                                                            display: 'inline-block',
-                                                                            maxWidth: '140px',
-                                                                            overflow: 'hidden',
-                                                                            textOverflow: 'ellipsis',
-                                                                            whiteSpace: 'nowrap',
-                                                                        }}
-                                                                        title={p.name}
-                                                                    >
-                                                                        {p.name}
-                                                                    </span>
+                                                                    {p.name}
                                                                 </Select.Option>
                                                             ))}
                                                         </Select>
                                                     </Form.Item>
                                                 </Col>
-
                                                 <Col span={3}>
                                                     <Form.Item
                                                         {...restField}
@@ -314,7 +368,6 @@ const Check = () => {
                                                         <InputNumber min={0} placeholder="Hiện tại" style={{ width: '100%' }} />
                                                     </Form.Item>
                                                 </Col>
-
                                                 <Col span={3}>
                                                     <Form.Item noStyle shouldUpdate>
                                                         {() => {
@@ -325,7 +378,6 @@ const Check = () => {
                                                         }}
                                                     </Form.Item>
                                                 </Col>
-
                                                 <Col span={3}>
                                                     <Form.Item noStyle shouldUpdate>
                                                         {() => {
@@ -333,7 +385,6 @@ const Check = () => {
                                                             const product = products.find(p => p.id === productId);
                                                             const systemQuantity = product?.stock ?? null;
                                                             const actualQuantity = form.getFieldValue(['items', name, 'quantity']) ?? null;
-
                                                             if (actualQuantity !== null && systemQuantity !== null) {
                                                                 const difference = actualQuantity - systemQuantity;
                                                                 return (
@@ -353,19 +404,16 @@ const Check = () => {
                                                         }}
                                                     </Form.Item>
                                                 </Col>
-
-                                                <Col span={5}>
+                                                <Col span={4}>
                                                     <Form.Item {...restField} name={[name, 'note']} style={{ marginBottom: 0 }}>
                                                         <Input placeholder="Ghi chú" />
                                                     </Form.Item>
                                                 </Col>
-
-                                                <Col span={2}>
+                                                <Col span={1}>
                                                     <Button type="text" danger icon={<DeleteOutlined />} onClick={() => remove(name)} />
                                                 </Col>
                                             </Row>
                                         ))}
-
                                         <Form.Item>
                                             <Button type="dashed" onClick={() => add()} block icon={<PlusOutlined />}>
                                                 Thêm sản phẩm mới
@@ -374,43 +422,11 @@ const Check = () => {
                                     </>
                                 )}
                             </Form.List>
-                        </Col>
+                        </Form>
+                    </Tabs.TabPane>
 
-                        <Col span={8}>
-                            <Title level={5}>Thông tin hóa đơn</Title>
-                            <Form.Item name="code" label="Code" rules={[{ required: true, message: 'Nhập hoặc random' }]}>
-                                <Input
-                                    placeholder="Tự động / Nhập thủ công"
-                                    addonAfter={<Button icon={<ReloadOutlined />} size="small" onClick={() => form.setFieldsValue({ code: generateCode(12) })} />}
-                                />
-                            </Form.Item>
+                </Tabs>
 
-                            <Form.Item name="status" label="Trạng thái" rules={[{ required: true, message: 'Chọn trạng thái' }]}>
-                                <Select placeholder="Chọn trạng thái">
-                                    <Select.Option value={1}>Active</Select.Option>
-                                    <Select.Option value={2}>Inactive</Select.Option>
-                                </Select>
-                            </Form.Item>
-
-                            <Form.Item name="warehouse_id" label="Chọn Kho" rules={[{ required: true, message: 'Chọn kho' }]}>
-                                <Select placeholder="Chọn kho" showSearch optionFilterProp="children">
-                                    {warehouses.map(wh => <Select.Option key={wh.id} value={wh.id}>{wh.name}</Select.Option>)}
-                                </Select>
-                            </Form.Item>
-
-                            <Form.Item label="Người tạo">
-                                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                                    {user?.profile?.thumbnail ? <Image src={user.profile.thumbnail} width={32} height={32} style={{ borderRadius: '50%' }} preview={false} /> : <div style={{ width: 32, height: 32, borderRadius: '50%', background: '#ccc' }} />}
-                                    <span>{user?.username || 'Unknown'}</span>
-                                </div>
-                            </Form.Item>
-
-                            <Form.Item name="note" label="Ghi chú">
-                                <Input.TextArea placeholder="Nhập ghi chú (nếu có)" rows={6} />
-                            </Form.Item>
-                        </Col>
-                    </Row>
-                </Form>
             </Drawer>
         </div>
     );

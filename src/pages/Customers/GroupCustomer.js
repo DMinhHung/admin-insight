@@ -10,6 +10,8 @@ import {
   Col,
   Modal,
   Form,
+  Tag,
+  Select
 } from 'antd';
 import { EditOutlined, DeleteOutlined } from '@ant-design/icons';
 import axios from 'axios';
@@ -194,7 +196,7 @@ const GroupCustomer = () => {
           setEditingId(null);
         }}
         onOk={handleModalOk}
-        width="600px"
+        width={1000}
         maskClosable={false}
         title={editingId ? 'Sửa Nhóm Khách Hàng' : 'Tạo Nhóm Khách Hàng'}
       >
@@ -213,6 +215,25 @@ const GroupCustomer = () => {
           >
             <Input />
           </Form.Item>
+
+          <Row gutter={16}>
+            <Col span={24}>
+              <Form.Item
+                name="status"
+                label="Trạng thái"
+                rules={[{ required: true, message: 'Select status' }]}
+              >
+                <Select placeholder="Select status" style={{ width: '100%' }}>
+                  <Select.Option value={1}>
+                    <span><Tag color="green">Hoạt động</Tag></span>
+                  </Select.Option>
+                  <Select.Option value={0}>
+                    <span><Tag color="red">Ngưng hoạt động</Tag></span>
+                  </Select.Option>
+                </Select>
+              </Form.Item>
+            </Col>
+          </Row>
         </Form>
       </Modal>
     </div>

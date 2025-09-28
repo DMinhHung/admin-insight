@@ -32,8 +32,7 @@ const ProductAttribute = () => {
     setLoading(true);
     try {
       const res = await fetch(
-        `${process.env.REACT_APP_ADMIN_INSIGHT_URL}/api/v1/admin/product/item-attribute${
-          nameSearch ? `?name=${nameSearch}` : ''
+        `${process.env.REACT_APP_ADMIN_INSIGHT_URL}/api/v1/admin/product/item-attribute${nameSearch ? `?name=${nameSearch}` : ''
         }`,
         {
           headers: {
@@ -295,11 +294,15 @@ const ProductAttribute = () => {
               <Form.Item
                 name="status"
                 label="Trạng thái"
-                rules={[{ required: true, message: 'Chọn trạng thái' }]}
+                rules={[{ required: true, message: 'Select status' }]}
               >
-                <Select placeholder="Chọn trạng thái">
-                  <Select.Option value={1}>Đang hoạt động</Select.Option>
-                  <Select.Option value={2}>Ngừng</Select.Option>
+                <Select placeholder="Select status" style={{ width: '100%' }}>
+                  <Select.Option value={1}>
+                    <span><Tag color="green">Hoạt động</Tag></span>
+                  </Select.Option>
+                  <Select.Option value={0}>
+                    <span><Tag color="red">Ngưng hoạt động</Tag></span>
+                  </Select.Option>
                 </Select>
               </Form.Item>
             </Col>

@@ -319,7 +319,7 @@ const Product = () => {
               placeholder="Tìm theo tên"
               value={searchText}
               onChange={(e) => setSearchText(e.target.value)}
-              onPressEnter={handleSearch} 
+              onPressEnter={handleSearch}
               style={{ width: 200 }}
             />
             <Button type="primary" onClick={handleCreate}>Thêm mới</Button>
@@ -481,16 +481,19 @@ const Product = () => {
               <Form.Item
                 name="status"
                 label="Trạng thái"
-                rules={[{ required: true }]}
+                rules={[{ required: true, message: 'Select status' }]}
               >
-                <Select placeholder="Chọn trạng thái">
-                  <Select.Option value={1}>Đang bán</Select.Option>
-                  <Select.Option value={2}>Ngừng bán</Select.Option>
+                <Select placeholder="Select status" style={{ width: '100%' }}>
+                  <Select.Option value={1}>
+                    <span><Tag color="green">Hoạt động</Tag></span>
+                  </Select.Option>
+                  <Select.Option value={0}>
+                    <span><Tag color="red">Ngưng hoạt động</Tag></span>
+                  </Select.Option>
                 </Select>
               </Form.Item>
             </Col>
           </Row>
-
           <Row gutter={[24, 16]}>
             <Col span={12}>
               <Form.Item

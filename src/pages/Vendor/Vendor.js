@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import {
     Table, Typography, Input, Button, Space, message,
-    Row, Col, Modal, Form, Select, Dropdown, Tabs
+    Row, Col, Modal, Form, Select, Dropdown, Tabs, Tag
 } from 'antd';
 import { EditOutlined, DeleteOutlined, ReloadOutlined, SettingOutlined } from '@ant-design/icons';
 import axios from 'axios';
@@ -23,6 +23,7 @@ const Vendor = () => {
     const [wards, setWards] = useState([]);
     const [loadingCity, setLoadingCity] = useState(false);
     const [loadingWard, setLoadingWard] = useState(false);
+
     const token = localStorage.getItem('accessToken');
     const hasFetched = useRef(false);
 
@@ -37,9 +38,7 @@ const Vendor = () => {
     const fetchVendors = async (nameSearch = '') => {
         setLoading(true);
         try {
-            const res = await api.get(
-                `api/v1/admin/supplier/form${nameSearch ? `?name=${nameSearch}` : ''}`
-            );
+            const res = await api.get(`api/v1/admin/supplier/form${nameSearch ? `?name=${nameSearch}` : ''}`);
             const vendors = res?.data?.data?.items || [];
             setData(vendors.map(v => ({
                 key: v.id,
@@ -51,6 +50,9 @@ const Vendor = () => {
                 gender: v.gender,
                 company_name: v.company_name,
                 tax_code: v.tax_code,
+                address: v.address,
+                group_vendor: v?.group?.name,
+                status: v.status,
                 debt: v.debt,
             })));
         } catch (err) {
@@ -84,9 +86,7 @@ const Vendor = () => {
     const handleProvinceChange = async (provinceCode) => {
         try {
             setLoadingWard(true);
-            const res = await axios.get(
-                `https://provinces.open-api.vn/api/v2/p/${provinceCode}?depth=2`
-            );
+            const res = await axios.get(`https://provinces.open-api.vn/api/v2/p/${provinceCode}?depth=2`);
             setWards(res.data.wards || []);
             vendorForm.setFieldsValue({ ward: undefined });
         } catch {
@@ -95,9 +95,6 @@ const Vendor = () => {
             setLoadingWard(false);
         }
     };
-
-    useEffect(() => { fetchGroups(); }, []);
-    useEffect(() => { fetchCities(); }, []);
 
     useEffect(() => {
         if (hasFetched.current) return;
@@ -122,13 +119,9 @@ const Vendor = () => {
     const handleEdit = async (record) => {
         try {
             setLoading(true);
-            const res = await api.get(`/api/v1/admin/supplier/form/view`,
-                { params: { id: record.key } });
+            const res = await api.get(`/api/v1/admin/supplier/form/view`, { params: { id: record.key } });
             const vendor = res?.data?.data || {};
-            vendorForm.setFieldsValue({
-                ...vendor,
-                type: vendor.type ? Number(vendor.type) : 1,
-            });
+            vendorForm.setFieldsValue({ ...vendor, type: vendor.type ? Number(vendor.type) : 1 });
             setEditingVendor(vendor.id);
             setIsModalVisible(true);
         } catch (err) {
@@ -170,43 +163,52 @@ const Vendor = () => {
     };
 
     const handleDelete = async (id) => {
-        try {
-            setLoading(true);
-            await api.post(`/api/v1/admin/supplier/form/delete`, { id });
-            setData(prev => prev.filter(item => item.key !== id));
-            message.success('Đã xóa nhà cung cấp thành công');
-        } catch (err) {
-            message.error(err.message || 'Xóa nhà cung cấp thất bại');
-        } finally {
-            setLoading(false);
-        }
+        confirm({
+            title: 'Xóa nhà cung cấp?',
+            onOk: async () => {
+                try {
+                    setLoading(true);
+                    await api.post(`/api/v1/admin/supplier/form/delete`, { id });
+                    setData(prev => prev.filter(item => item.key !== id));
+                    message.success('Đã xóa nhà cung cấp thành công');
+                } catch (err) {
+                    message.error(err.message || 'Xóa nhà cung cấp thất bại');
+                } finally {
+                    setLoading(false);
+                }
+            }
+        });
     };
 
-    const defaultVisible = ['code', 'name', 'phone', 'email', 'gender', 'actions'];
+    const defaultVisible = ['code', 'name', 'company_name', 'phone', 'email', 'gender', 'status', 'actions'];
     const [visibleColumns, setVisibleColumns] = useState(defaultVisible);
 
     const columns = [
         { title: 'Mã NCC', dataIndex: 'code', key: 'code', sorter: (a, b) => a.code.localeCompare(b.code) },
         { title: 'Tên', dataIndex: 'name', key: 'name', sorter: (a, b) => a.name.localeCompare(b.name) },
         { title: 'Điện thoại', dataIndex: 'phone', key: 'phone' },
-        { title: 'Email', dataIndex: 'email', key: 'email' },
-        { title: 'Công ty', dataIndex: 'company_name', key: 'company_name' },
+        { title: 'Email', dataIndex: 'email', key: 'email', sorter: (a, b) => a.email.localeCompare(b.email) },
+        { title: 'Công ty', dataIndex: 'company_name', key: 'company_name', sorter: (a, b) => a.company_name.localeCompare(b.company_name) },
         { title: 'MST', dataIndex: 'tax_code', key: 'tax_code' },
+        { title: 'Địa chỉ', dataIndex: 'address', key: 'address' },
+        { title: 'Nhóm', dataIndex: 'group_vendor', key: 'group_vendor' },
+        {
+            title: 'Trạng thái',
+            dataIndex: 'status',
+            sorter: (a, b) => a.status - b.status,
+            render: value => value === 1 ? <Tag color="green">Hoạt động</Tag> : <Tag color="red">Ngưng hoạt động</Tag>
+        },
         {
             title: 'Hành động',
             key: 'actions',
             render: (_, r) => (
                 <Space>
-                    <Button type="primary" icon={<EditOutlined />} onClick={() => handleEdit(r)}>Sửa</Button>
-                    <Button danger icon={<DeleteOutlined />} onClick={() => confirm({
-                        title: 'Xóa nhà cung cấp?',
-                        onOk: () => handleDelete(r.key),
-                    })}>Xóa</Button>
+                    <Button type="primary" icon={<EditOutlined />} onClick={() => handleEdit(r)}></Button>
+                    <Button danger icon={<DeleteOutlined />} onClick={() => handleDelete(r.key)}></Button>
                 </Space>
             ),
         },
     ];
-
 
     const tabItems = [
         {
@@ -234,10 +236,23 @@ const Vendor = () => {
                             </Form.Item>
                         </Col>
                     </Row>
-
                     <Row gutter={16}>
                         <Col span={12}><Form.Item name="phone" label="Điện thoại"><Input /></Form.Item></Col>
                         <Col span={12}><Form.Item name="email" label="Email"><Input /></Form.Item></Col>
+                    </Row>
+                    <Row gutter={16}>
+                        <Col span={24}>
+                            <Form.Item
+                                name="status"
+                                label="Trạng thái"
+                                rules={[{ required: true, message: 'Select status' }]}
+                            >
+                                <Select placeholder="Select status" style={{ width: '100%' }}>
+                                    <Select.Option value={1}><Tag color="green">Hoạt động</Tag></Select.Option>
+                                    <Select.Option value={0}><Tag color="red">Ngưng hoạt động</Tag></Select.Option>
+                                </Select>
+                            </Form.Item>
+                        </Col>
                     </Row>
                 </>
             ),
@@ -249,20 +264,13 @@ const Vendor = () => {
                 <>
                     <Row gutter={16}>
                         <Col span={8}>
-                            <Form.Item
-                                name="city"
-                                label="Tỉnh/Thành phố"
-                                rules={[{ required: true }]}
-                            >
+                            <Form.Item name="city" label="Tỉnh/Thành phố" rules={[{ required: true }]}>
                                 <Select
                                     showSearch
                                     placeholder="Chọn tỉnh/thành"
                                     loading={loadingCity}
                                     onChange={handleProvinceChange}
                                     optionFilterProp="children"
-                                    filterOption={(input, opt) =>
-                                        opt?.children.toLowerCase().includes(input.toLowerCase())
-                                    }
                                 >
                                     {cities.map(c => (
                                         <Option key={c.code} value={c.code}>{c.name}</Option>
@@ -271,20 +279,13 @@ const Vendor = () => {
                             </Form.Item>
                         </Col>
                         <Col span={8}>
-                            <Form.Item
-                                name="ward"
-                                label="Quận/Huyện/Phường/Xã"
-                                rules={[{ required: true }]}
-                            >
+                            <Form.Item name="ward" label="Quận/Huyện/Phường/Xã" rules={[{ required: true }]}>
                                 <Select
                                     showSearch
                                     placeholder="Chọn khu vực"
                                     loading={loadingWard}
                                     disabled={!wards.length}
                                     optionFilterProp="children"
-                                    filterOption={(input, opt) =>
-                                        opt?.children.toLowerCase().includes(input.toLowerCase())
-                                    }
                                 >
                                     {wards.map(w => (
                                         <Option key={w.code} value={w.code}>{`${w.name} (${w.division_type})`}</Option>
@@ -305,24 +306,9 @@ const Vendor = () => {
             children: (
                 <Row gutter={16}>
                     <Col span={12}>
-                        <Form.Item
-                            name="group_vendor"
-                            label="Nhóm nhà cung cấp"
-                            rules={[{ required: true, message: 'Vui lòng chọn nhóm' }]}
-                        >
-                            <Select
-                                placeholder="Chọn nhóm nhà cung cấp"
-                                optionFilterProp="children"
-                                showSearch
-                                filterOption={(input, option) =>
-                                    (option?.children ?? '').toLowerCase().includes(input.toLowerCase())
-                                }
-                            >
-                                {groupOptions.map(g => (
-                                    <Option key={g.id} value={g.id}>
-                                        {g.name}
-                                    </Option>
-                                ))}
+                        <Form.Item name="group_vendor" label="Nhóm nhà cung cấp" rules={[{ required: true }]}>
+                            <Select placeholder="Chọn nhóm nhà cung cấp" showSearch>
+                                {groupOptions.map(g => <Option key={g.id} value={g.id}>{g.name}</Option>)}
                             </Select>
                         </Form.Item>
                     </Col>
@@ -338,12 +324,10 @@ const Vendor = () => {
             key: '4',
             label: 'Xuất hóa đơn',
             children: (
-                <>
-                    <Row gutter={16}>
-                        <Col span={12}><Form.Item name="tax_code" label="Mã số thuế"><Input /></Form.Item></Col>
-                        <Col span={12}><Form.Item name="company_name" label="Tên công ty"><Input /></Form.Item></Col>
-                    </Row>
-                </>
+                <Row gutter={16}>
+                    <Col span={12}><Form.Item name="tax_code" label="Mã số thuế"><Input /></Form.Item></Col>
+                    <Col span={12}><Form.Item name="company_name" label="Tên công ty"><Input /></Form.Item></Col>
+                </Row>
             ),
         },
     ];
@@ -391,11 +375,9 @@ const Vendor = () => {
                     vendorForm.resetFields();
                 }}
                 onOk={handleModalOk}
-                width={1500}
+                width={1000}
                 maskClosable={false}
-                bodyStyle={{
-                    height: 600,
-                }}
+                bodyStyle={{ height: 600 }}
                 title={editingVendor ? 'Cập nhật khách hàng' : 'Tạo khách hàng mới'}
             >
                 <Form form={vendorForm} layout="vertical">

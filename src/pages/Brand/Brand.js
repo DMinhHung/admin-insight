@@ -34,8 +34,7 @@ const Brand = () => {
     setLoading(true);
     try {
       const res = await fetch(
-        `${process.env.REACT_APP_ADMIN_INSIGHT_URL}/api/v1/admin/brand/form${
-          nameSearch ? `?name=${nameSearch}` : ''
+        `${process.env.REACT_APP_ADMIN_INSIGHT_URL}/api/v1/admin/brand/form${nameSearch ? `?name=${nameSearch}` : ''
         }`,
         {
           headers: {
@@ -315,11 +314,15 @@ const Brand = () => {
               <Form.Item
                 name="status"
                 label="Trạng thái"
-                rules={[{ required: true, message: 'Chọn trạng thái' }]}
+                rules={[{ required: true, message: 'Select status' }]}
               >
-                <Select placeholder="Chọn trạng thái">
-                  <Select.Option value={1}>Hoạt động</Select.Option>
-                  <Select.Option value={2}>Ngưng</Select.Option>
+                <Select placeholder="Chọn trạng thái hoạt động" style={{ width: '100%' }}>
+                  <Select.Option value={1}>
+                    <span><Tag color="green">Hoạt động</Tag></span>
+                  </Select.Option>
+                  <Select.Option value={0}>
+                    <span><Tag color="red">Ngưng hoạt động</Tag></span>
+                  </Select.Option>
                 </Select>
               </Form.Item>
             </Col>

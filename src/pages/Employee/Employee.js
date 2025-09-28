@@ -1,11 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
 import {
     Table, Typography, Input, Button, Space, message,
-    Row, Modal, Form, Select, Upload, DatePicker, Col, Dropdown
+    Row, Modal, Form, Select, Upload, DatePicker, Col, Dropdown, Tag
 } from 'antd';
 import {
     EditOutlined, DeleteOutlined, PlusOutlined,
-    FilterOutlined, SettingOutlined
+    SettingOutlined
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import axios from 'axios';
@@ -182,7 +182,7 @@ const Employee = () => {
         }
     };
 
-    const defaultVisible = ['thumbnail', 'full_name', 'email', 'phone', 'position', 'address', 'start_date', 'actions'];
+    const defaultVisible = ['thumbnail', 'full_name', 'email', 'phone', 'position', 'start_date', 'status', 'actions'];
     const [visibleColumns, setVisibleColumns] = useState(defaultVisible);
 
     const columns = [
@@ -192,9 +192,9 @@ const Employee = () => {
             render: url =>
                 url && <img src={url} alt="" style={{ width: 40, height: 40, objectFit: 'cover' }} />
         },
-        { title: 'Họ tên', dataIndex: 'full_name' },
-        { title: 'Tên đăng nhập', dataIndex: 'username' },
-        { title: 'Email', dataIndex: 'email' },
+        { title: 'Họ tên', dataIndex: 'full_name', sorter: (a, b) => a.full_name.localeCompare(b.full_name) },
+        { title: 'Tên đăng nhập', dataIndex: 'username', sorter: (a, b) => a.username.localeCompare(b.username) },
+        { title: 'Email', dataIndex: 'email', sorter: (a, b) => a.email.localeCompare(b.email) },
         { title: 'Điện thoại', dataIndex: 'phone' },
         {
             title: 'Chức vụ',
@@ -208,7 +208,19 @@ const Employee = () => {
             render: g => (g === 1 ? 'Nam' : g === 2 ? 'Nữ' : 'Khác')
         },
         { title: 'Ngày sinh', dataIndex: 'birthday' },
-        { title: 'Ngày vào làm', dataIndex: 'start_date' },
+        {
+            title: 'Ngày vào làm', dataIndex: 'start_date', sorter: (a, b) => {
+                if (!a.start_date) return -1;
+                if (!b.start_date) return 1;
+                return new Date(a.start_date) - new Date(b.start_date);
+            }
+        },
+        {
+            title: 'Trạng thái',
+            dataIndex: 'status',
+            sorter: (a, b) => a.status - b.status,
+            render: value => value === 1 ? <Tag color="green">Hoạt động</Tag> : <Tag color="red">Ngưng hoạt động</Tag>
+        },
         {
             title: 'Thao tác',
             key: 'actions',
@@ -233,9 +245,6 @@ const Employee = () => {
                         onPressEnter={() => fetchEmployees({ username: searchText })}
                         style={{ width: 200 }}
                     />
-                    <Button icon={<FilterOutlined />} onClick={() => setIsFilterVisible(true)}>
-                        Lọc
-                    </Button>
                     <Button
                         type="primary"
                         icon={<PlusOutlined />}
@@ -274,7 +283,8 @@ const Employee = () => {
                 onCancel={() => { setIsModalVisible(false); setEditingId(null); }}
                 onOk={handleSave}
                 title={editingId ? 'Cập nhật nhân viên' : 'Thêm nhân viên'}
-                width={800}
+                width={1000}
+                 maskClosable={false}
             >
                 <Form form={form} layout="vertical">
                     <Row gutter={16}>
@@ -344,7 +354,6 @@ const Employee = () => {
                             </Form.Item>
                         </Col>
                         <Col span={12}>
-                            <Title level={4}>Ảnh đại diện</Title>
                             <Upload
                                 name="file"
                                 listType="picture-card"

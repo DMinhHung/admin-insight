@@ -10,6 +10,8 @@ import {
   Col,
   Modal,
   Form,
+  Tag,
+  Select
 } from 'antd';
 import { EditOutlined, DeleteOutlined } from '@ant-design/icons';
 import axios from 'axios';
@@ -36,14 +38,15 @@ const GroupVendor = () => {
     setLoading(true);
     try {
       const res = await api.get(
-        `api/v1/admin/supplier/group${nameSearch ? `?name=${nameSearch}` : ''}`
+        `api/v1/admin/supplier/group${nameSearch ? `?name=${encodeURIComponent(nameSearch)}` : ''}`
       );
-      const customers = res?.data?.data?.items || [];
+      const vendor_group = res?.data?.data?.items || [];
       setData(
-        customers.map((c) => ({
-          key: c.id,
-          name: c.name,
-          value: c.value,
+        vendor_group.map((vg) => ({
+          key: vg.id,
+          name: vg.name,
+          value: vg.value,
+          status: vg.status,
         }))
       );
     } catch (err) {
@@ -99,6 +102,7 @@ const GroupVendor = () => {
         message.error(dataRes.message || 'Thao tác thất bại');
         return;
       }
+
       message.success(editingId ? 'Cập nhật thành công' : 'Tạo mới thành công');
       setIsModalVisible(false);
       customerForm.resetFields();
@@ -117,10 +121,8 @@ const GroupVendor = () => {
       onOk: async () => {
         try {
           setLoading(true);
-          const res = await api.post(`/api/v1/admin/supplier/group/delete`, {
-            id,
-          });
-          if (!res.data) throw new Error('Xóa thất bại');
+          const res = await api.post(`/api/v1/admin/supplier/group/delete`, { id });
+          if (!res.data.status) throw new Error(res.data.message || 'Xóa thất bại');
           setData((prev) => prev.filter((item) => item.key !== id));
           message.success('Đã xóa thành công');
         } catch (err) {
@@ -136,25 +138,24 @@ const GroupVendor = () => {
     {
       title: 'Tên',
       dataIndex: 'name',
-      sorter: (a, b) => a.name.localeCompare(b.name),
+      sorter: (a, b) => (a.name || '').localeCompare(b.name || ''),
     },
     { title: 'Mô tả', dataIndex: 'value' },
+    {
+      title: 'Trạng thái',
+      dataIndex: 'status',
+      sorter: (a, b) => (a.status ?? 0) - (b.status ?? 0),
+      render: (value) =>
+        value === 1 ? <Tag color="green">Hoạt động</Tag> : <Tag color="red">Ngưng hoạt động</Tag>,
+    },
     {
       title: 'Hành động',
       render: (_, r) => (
         <Space>
-          <Button
-            type="primary"
-            icon={<EditOutlined />}
-            onClick={() => handleEdit(r)}
-          >
+          <Button type="primary" icon={<EditOutlined />} onClick={() => handleEdit(r)}>
             Sửa
           </Button>
-          <Button
-            danger
-            icon={<DeleteOutlined />}
-            onClick={() => handleDelete(r.key)}
-          >
+          <Button danger icon={<DeleteOutlined />} onClick={() => handleDelete(r.key)}>
             Xóa
           </Button>
         </Space>
@@ -194,9 +195,9 @@ const GroupVendor = () => {
           setEditingId(null);
         }}
         onOk={handleModalOk}
-        width="600px"
+        width={600}
         maskClosable={false}
-        title={editingId ? 'Sửa' : 'Tạo'}
+        title={editingId ? 'Sửa nhóm nhà cung cấp' : 'Tạo nhóm nhà cung cấp'}
       >
         <Form form={customerForm} layout="vertical">
           <Form.Item
@@ -213,6 +214,25 @@ const GroupVendor = () => {
           >
             <Input />
           </Form.Item>
+
+          <Row gutter={16}>
+            <Col span={24}>
+              <Form.Item
+                name="status"
+                label="Trạng Thái"
+                rules={[{ required: true, message: 'Select status' }]}
+              >
+                <Select placeholder="Select status" style={{ width: '100%' }}>
+                  <Select.Option value={1}>
+                    <span><Tag color="green">Hoạt động</Tag></span>
+                  </Select.Option>
+                  <Select.Option value={0}>
+                    <span><Tag color="red">Ngưng hoạt động</Tag></span>
+                  </Select.Option>
+                </Select>
+              </Form.Item>
+            </Col>
+          </Row>
         </Form>
       </Modal>
     </div>

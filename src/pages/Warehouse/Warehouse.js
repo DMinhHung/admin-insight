@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Table, Typography, Input, Button, Space, message, Row, Col, Tag, Modal, Form, Select, Upload, Image } from 'antd';
-import { EditOutlined, DeleteOutlined, PlusOutlined } from '@ant-design/icons';
+import { Table, Typography, Input, Button, Space, message, Row, Col, Tag, Modal, Form, Select, } from 'antd';
+import { EditOutlined, DeleteOutlined } from '@ant-design/icons';
 
 const { Title } = Typography;
 const { confirm } = Modal;
@@ -32,9 +32,10 @@ const Warehouse = () => {
             const warehouses = data?.data?.items ?? [];
             setData(
                 warehouses.map(item => ({
-                    name: item.name,
-                    value: item.value,
-                    status: item.status,
+                    key: item.id || item.value,
+                    name: item.name || '',
+                    value: item.value || '',
+                    status: item.status || 2,
                 }))
             );
         } catch (err) {
@@ -156,16 +157,24 @@ const Warehouse = () => {
     };
 
     const columns = [
-        { title: 'Name', dataIndex: 'name', sorter: (a, b) => a.name.localeCompare(b.name) },
-        { title: 'Mô tả', dataIndex: 'value', sorter: (a, b) => a.slug.localeCompare(b.slug) },
         {
-            title: 'Status',
-            dataIndex: 'status',
-            sorter: (a, b) => a.status - b.status,
-            render: value => value === 1 ? <Tag color="green">Active</Tag> : <Tag color="red">Inactive</Tag>
+            title: 'Name',
+            dataIndex: 'name',
+            sorter: (a, b) => (a.name || '').localeCompare(b.name || '')
         },
         {
-            title: 'Actions',
+            title: 'Mô tả',
+            dataIndex: 'value',
+            sorter: (a, b) => (a.value || '').localeCompare(b.value || '')
+        },
+        {
+            title: 'Trạng thái',
+            dataIndex: 'status',
+            sorter: (a, b) => a.status - b.status,
+            render: value => value === 1 ? <Tag color="green">Hoạt động</Tag> : <Tag color="red">Ngưng hoạt động</Tag>
+        },
+        {
+            title: 'Hành dộng',
             key: 'actions',
             render: (_, record) => (
                 <Space size="middle">
@@ -197,7 +206,11 @@ const Warehouse = () => {
             <Modal
                 title={editingWarehouse ? 'Edit Warehouse' : 'Create Warehouse'}
                 visible={isModalVisible}
-                onCancel={() => { setIsModalVisible(false); warehouseForm.resetFields(); setEditingWarehouse(null); }}
+                onCancel={() => {
+                    setIsModalVisible(false);
+                    warehouseForm.resetFields();
+                    setEditingWarehouse(null);
+                }}
                 onOk={handleModalOk}
                 okText={editingWarehouse ? 'Update' : 'Create'}
                 width={900}
@@ -205,15 +218,41 @@ const Warehouse = () => {
             >
                 <Form form={warehouseForm} layout="vertical">
                     <Row gutter={16}>
-                        <Col span={12}><Form.Item name="name" label="Name" rules={[{ required: true }]}><Input /></Form.Item></Col>
-                        <Col span={12}><Form.Item name="value" label="Mô tả" rules={[{ required: true }]}><Input /></Form.Item></Col>
-                    </Row>
-                    <Row gutter={16}>
                         <Col span={12}>
-                            <Form.Item name="status" label="Status" rules={[{ required: true, message: 'Select status' }]}>
-                                <Select placeholder="Select status">
-                                    <Select.Option value={1}>Active</Select.Option>
-                                    <Select.Option value={2}>Inactive</Select.Option>
+                            <Form.Item
+                                name="name"
+                                label="Name"
+                                rules={[{ required: true, message: 'Please enter warehouse name' }]}
+                            >
+                                <Input placeholder="Enter warehouse name" />
+                            </Form.Item>
+                        </Col>
+
+                        <Col span={12}>
+                            <Form.Item
+                                name="value"
+                                label="Mô tả"
+                                rules={[{ required: true, message: 'Please enter description' }]}
+                            >
+                                <Input placeholder="Enter description" />
+                            </Form.Item>
+                        </Col>
+                    </Row>
+
+                    <Row gutter={16}>
+                        <Col span={24}>
+                            <Form.Item
+                                name="status"
+                                label="Trạng thái"
+                                rules={[{ required: true, message: 'Select status' }]}
+                            >
+                                <Select placeholder="Select status" style={{ width: '100%' }}>
+                                    <Select.Option value={1}>
+                                        <span><Tag color="green">Hoạt động</Tag></span>
+                                    </Select.Option>
+                                    <Select.Option value={0}>
+                                        <span><Tag color="red">Ngưng hoạt động</Tag></span>
+                                    </Select.Option>
                                 </Select>
                             </Form.Item>
                         </Col>

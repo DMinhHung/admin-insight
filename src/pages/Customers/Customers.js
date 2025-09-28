@@ -15,6 +15,8 @@ import {
     Radio,
     Select,
     Dropdown,
+    Tag,
+    Image
 } from 'antd';
 import {
     EditOutlined,
@@ -43,14 +45,6 @@ const Customers = () => {
     const [wards, setWards] = useState([]);
     const [loadingCity, setLoadingCity] = useState(false);
     const [loadingWard, setLoadingWard] = useState(false);
-    const [visibleColumns, setVisibleColumns] = useState([
-        'code',
-        'name',
-        'phone',
-        'email',
-        'gender',
-        'actions',
-    ]);
 
     const token = localStorage.getItem('accessToken');
     const hasFetched = useRef(false);
@@ -81,6 +75,9 @@ const Customers = () => {
                     gender: c.gender,
                     company_name: c.company_name,
                     tax_code: c.tax_code,
+                    group_customer: c?.group?.name,
+                    fb_url: c.fb_url,
+                    status: c.status,
                     debt: c.debt,
                 }))
             );
@@ -221,11 +218,23 @@ const Customers = () => {
         }
     };
 
+    const [visibleColumns, setVisibleColumns] = useState(['code', 'thumbnail', 'name', 'phone', 'email', 'gender', 'actions', 'status']);
+
     const columns = [
         { title: 'Mã KH', dataIndex: 'code', key: 'code' },
+        {
+            title: 'Ảnh',
+            dataIndex: 'thumbnail',
+            render: url =>
+                url ? <Image src={url} alt="thumbnail" width={80} height={80} style={{ objectFit: 'cover' }} preview={false} /> : '—',
+        },
         { title: 'Tên', dataIndex: 'name', key: 'name' },
         { title: 'Điện thoại', dataIndex: 'phone', key: 'phone' },
         { title: 'Email', dataIndex: 'email', key: 'email' },
+        { title: 'Facebook', dataIndex: 'fb_url', key: 'fb_url' },
+        { title: 'Nhóm', dataIndex: 'group_customer', key: 'group_customer' },
+        { title: 'MST', dataIndex: 'tax_code', key: 'tax_code' },
+
         {
             title: 'Giới tính',
             dataIndex: 'gender',
@@ -234,6 +243,12 @@ const Customers = () => {
         },
         { title: 'Công ty', dataIndex: 'company_name', key: 'company_name' },
         { title: 'MST', dataIndex: 'tax_code', key: 'tax_code' },
+        {
+            title: 'Trạng thái',
+            dataIndex: 'status',
+            sorter: (a, b) => a.status - b.status,
+            render: value => value === 1 ? <Tag color="green">Hoạt động</Tag> : <Tag color="red">Ngưng hoạt động</Tag>
+        },
         {
             title: 'Hành động',
             key: 'actions',
@@ -308,30 +323,51 @@ const Customers = () => {
                         <Col span={8}><Form.Item name="email" label="Email"><Input /></Form.Item></Col>
                     </Row>
                     <Form.Item name="fb_url" label="Facebook"><Input /></Form.Item>
-                    <Form.Item name="thumbnail" label="Ảnh">
-                        <Upload
-                            name="file"
-                            listType="picture-card"
-                            maxCount={1}
-                            accept="image/*"
-                            action={`${process.env.REACT_APP_ADMIN_INSIGHT_URL}/api/v1/general/upload/create`}
-                            headers={{ Authorization: `Bearer ${token}` }}
-                            onChange={({ file }) => {
-                                if (file.status === 'done') {
-                                    const { url, path } = file.response?.data || {};
-                                    customerForm.setFieldsValue({
-                                        thumbnail: url,
-                                        thumbnail_path: path,
-                                    });
-                                } else if (file.status === 'error') message.error('Upload thất bại');
-                            }}
-                        >
-                            <div>
-                                <PlusOutlined />
-                                <div style={{ marginTop: 8 }}>Upload</div>
-                            </div>
-                        </Upload>
-                    </Form.Item>
+
+                    <Row gutter={16}>
+                        <Col span={12}>
+                            <Form.Item
+                                name="status"
+                                label="Trạng thái"
+                                rules={[{ required: true, message: 'Select status' }]}
+                            >
+                                <Select placeholder="Select status" style={{ width: '100%' }}>
+                                    <Select.Option value={1}>
+                                        <span><Tag color="green">Hoạt động</Tag></span>
+                                    </Select.Option>
+                                    <Select.Option value={0}>
+                                        <span><Tag color="red">Ngưng hoạt động</Tag></span>
+                                    </Select.Option>
+                                </Select>
+                            </Form.Item>
+                        </Col>
+                        <Col span={12}>
+                            <Form.Item name="thumbnail" label="Ảnh">
+                                <Upload
+                                    name="file"
+                                    listType="picture-card"
+                                    maxCount={1}
+                                    accept="image/*"
+                                    action={`${process.env.REACT_APP_ADMIN_INSIGHT_URL}/api/v1/general/upload/create`}
+                                    headers={{ Authorization: `Bearer ${token}` }}
+                                    onChange={({ file }) => {
+                                        if (file.status === 'done') {
+                                            const { url, path } = file.response?.data || {};
+                                            customerForm.setFieldsValue({
+                                                thumbnail: url,
+                                                thumbnail_path: path,
+                                            });
+                                        } else if (file.status === 'error') message.error('Upload thất bại');
+                                    }}
+                                >
+                                    <div>
+                                        <PlusOutlined />
+                                        <div style={{ marginTop: 8 }}>Upload</div>
+                                    </div>
+                                </Upload>
+                            </Form.Item>
+                        </Col>
+                    </Row>
                 </>
             ),
         },
@@ -469,7 +505,7 @@ const Customers = () => {
                                                 <img
                                                     src={b.logo}
                                                     alt={b.shortName}
-                                                    style={{ width: 40, height: 40, objectFit: 'contain' }}
+                                                    style={{ width: 80, height: 80, objectFit: 'contain' }}
                                                 />
                                                 <span>
                                                     {b.shortName} - {b.name}
@@ -540,7 +576,7 @@ const Customers = () => {
                     customerForm.resetFields();
                 }}
                 onOk={handleModalOk}
-                width={1500}
+                width={1000}
                 maskClosable={false}
                 bodyStyle={{
                     height: 600,
