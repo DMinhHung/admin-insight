@@ -26,7 +26,10 @@ export default function Login() {
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(values),
+          body: JSON.stringify({
+            email: values.email,
+            password: values.password,
+          }),
         }
       );
 
@@ -101,15 +104,12 @@ export default function Login() {
         >
           <Form.Item
             name="email"
-            label={<Text strong>Email</Text>}
-            rules={[
-              { required: true, message: 'Vui lòng nhập email!' },
-              { type: 'email', message: 'Email không hợp lệ!' },
-            ]}
+            label={<Text strong>Tên đăng nhập</Text>}
+            rules={[{ required: true, message: 'Vui lòng nhập username!' }]}
           >
             <Input
               size="large"
-              placeholder="admin@example.com"
+              placeholder="Nhập username"
               style={{ borderRadius: 8 }}
             />
           </Form.Item>

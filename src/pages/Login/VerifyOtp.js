@@ -29,7 +29,7 @@ export const VerifyOtp = () => {
 
             if (!res.ok || !data.status) throw new Error(data.message || 'Xác minh OTP thất bại');
 
-            const userId = data?.data;
+            const userId = data?.data?.user_id;
             if (!userId) throw new Error('Không tìm thấy user_id');
 
             setSuccess('Xác minh thành công! Chuyển sang đặt lại mật khẩu...');
