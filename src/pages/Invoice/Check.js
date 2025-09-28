@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Table, Typography, Input, Button, Space, message, Row, Col, Tag, Form, Select, Image, InputNumber, Drawer } from 'antd';
+import { Table, Typography, Input, Button, Space, message, Row, Col, Tag, Form, Select, Image, InputNumber, Drawer, Card } from 'antd';
 import { EditOutlined, DeleteOutlined, PlusOutlined, ReloadOutlined } from '@ant-design/icons';
 import axios from 'axios';
 import { Tabs } from 'antd';
@@ -109,7 +109,7 @@ const Check = () => {
                 status: item.status,
                 note: item.note,
                 items: item.items.map(it => ({
-                    productId: it.product_id,
+                    product_variant_id: it.product_variant_id,
                     quantity: it.actual_quantity || 0,
                     note: it.note || ''
                 })),
@@ -128,12 +128,12 @@ const Check = () => {
             setLoading(true);
 
             const itemsPayload = (values.items || []).map(item => {
-                const product = products.find(p => p.id === item.productId);
+                const product = products.find(p => p.id === item.product_variant_id);
                 const systemQuantity = product?.stock || 0;
                 const actualQuantity = item.quantity || 0;
                 return {
                     check_id: editingWarehouse || null,
-                    product_id: item.productId,
+                    product_variant_id: item.product_variant_id,
                     actual_quantity: actualQuantity,
                     system_quantity: systemQuantity,
                     difference_quantity: actualQuantity - systemQuantity,
@@ -245,7 +245,6 @@ const Check = () => {
                 }
             >
                 <Tabs defaultActiveKey="1">
-                    {/* Thông tin phiếu */}
                     <Tabs.TabPane tab="Thông tin phiếu" key="1">
                         <Form form={form} layout="vertical">
                             <Row gutter={16}>
@@ -257,11 +256,20 @@ const Check = () => {
                                         />
                                     </Form.Item>
                                 </Col>
+
                                 <Col span={12}>
-                                    <Form.Item name="status" label="Trạng thái" rules={[{ required: true, message: 'Chọn trạng thái' }]}>
-                                        <Select placeholder="Chọn trạng thái">
-                                            <Select.Option value={1}>Active</Select.Option>
-                                            <Select.Option value={2}>Inactive</Select.Option>
+                                    <Form.Item
+                                        name="status"
+                                        label="Trạng thái"
+                                        rules={[{ required: true, message: 'Select status' }]}
+                                    >
+                                        <Select placeholder="Select status" style={{ width: '100%' }}>
+                                            <Select.Option value={1}>
+                                                <span><Tag color="green">Hoạt động</Tag></span>
+                                            </Select.Option>
+                                            <Select.Option value={0}>
+                                                <span><Tag color="red">Ngưng hoạt động</Tag></span>
+                                            </Select.Option>
                                         </Select>
                                     </Form.Item>
                                 </Col>
@@ -293,128 +301,112 @@ const Check = () => {
 
                     <Tabs.TabPane tab="Danh sách sản phẩm" key="2">
                         <Form form={form} layout="vertical">
-                            {/* Header cột */}
-                            <Row
-                                gutter={12}
-                                style={{
-                                    padding: 12,
-                                    marginBottom: 12,
-                                    borderBottom: '2px solid #d9d9d9',
-                                    fontWeight: 'bold',
-                                    background: '#f0f0f0',
-                                }}
-                            >
-                                <Col span={2}>Thumbnail</Col>
-                                <Col span={6}>Sản phẩm</Col>
-                                <Col span={3}>Số lượng hiện tại</Col>
-                                <Col span={3}>Số lượng hệ thống</Col>
-                                <Col span={3}>Chênh lệch</Col>
-                                <Col span={4}>Ghi chú</Col>
-                                <Col span={1}></Col>
-                            </Row>
-
                             <Form.List name="items">
                                 {(fields, { add, remove }) => (
                                     <>
-                                        {fields.map(({ key, name, ...restField }) => (
-                                            <Row
-                                                key={key}
-                                                gutter={12}
-                                                align="middle"
-                                                style={{
-                                                    padding: 12,
-                                                    marginBottom: 12,
-                                                    border: '1px solid #d9d9d9',
-                                                    borderRadius: 6,
-                                                    background: '#fafafa',
-                                                }}
-                                            >
-                                                <Col span={2}>
-                                                    <Form.Item {...restField} noStyle shouldUpdate>
-                                                        {() => {
-                                                            const productId = form.getFieldValue(['items', name, 'productId']);
-                                                            const product = products.find(p => p.id === productId);
-                                                            return product?.thumbnail ? (
-                                                                <Image src={product.thumbnail} width={50} height={50} preview={false} />
-                                                            ) : (
-                                                                <div style={{ width: 50, height: 50, background: '#ccc', borderRadius: 4 }} />
-                                                            );
-                                                        }}
-                                                    </Form.Item>
-                                                </Col>
-                                                <Col span={6}>
-                                                    <Form.Item
-                                                        {...restField}
-                                                        name={[name, 'productId']}
-                                                        rules={[{ required: true, message: 'Chọn sản phẩm' }]}
-                                                        style={{ marginBottom: 0 }}
-                                                    >
-                                                        <Select placeholder="Chọn sản phẩm" showSearch optionFilterProp="children">
-                                                            {products.map(p => (
-                                                                <Select.Option key={p.id} value={p.id}>
-                                                                    {p.name}
-                                                                </Select.Option>
-                                                            ))}
-                                                        </Select>
-                                                    </Form.Item>
-                                                </Col>
-                                                <Col span={3}>
-                                                    <Form.Item
-                                                        {...restField}
-                                                        name={[name, 'quantity']}
-                                                        rules={[{ required: true, message: 'Nhập số lượng' }]}
-                                                        style={{ marginBottom: 0 }}
-                                                    >
-                                                        <InputNumber min={0} placeholder="Hiện tại" style={{ width: '100%' }} />
-                                                    </Form.Item>
-                                                </Col>
-                                                <Col span={3}>
-                                                    <Form.Item noStyle shouldUpdate>
-                                                        {() => {
-                                                            const productId = form.getFieldValue(['items', name, 'productId']);
-                                                            const product = products.find(p => p.id === productId);
-                                                            const systemQuantity = product?.stock || 0;
-                                                            return <InputNumber value={systemQuantity} readOnly style={{ width: '100%' }} placeholder="Hệ thống" />;
-                                                        }}
-                                                    </Form.Item>
-                                                </Col>
-                                                <Col span={3}>
-                                                    <Form.Item noStyle shouldUpdate>
-                                                        {() => {
-                                                            const productId = form.getFieldValue(['items', name, 'productId']);
-                                                            const product = products.find(p => p.id === productId);
-                                                            const systemQuantity = product?.stock ?? null;
-                                                            const actualQuantity = form.getFieldValue(['items', name, 'quantity']) ?? null;
-                                                            if (actualQuantity !== null && systemQuantity !== null) {
-                                                                const difference = actualQuantity - systemQuantity;
-                                                                return (
-                                                                    <InputNumber
-                                                                        value={difference}
-                                                                        readOnly
-                                                                        style={{
-                                                                            width: '100%',
-                                                                            color: difference < 0 ? 'red' : difference > 0 ? 'green' : 'black',
-                                                                            fontWeight: 'bold',
-                                                                        }}
-                                                                        placeholder="Chênh lệch"
-                                                                    />
-                                                                );
+                                        <Row gutter={[16, 16]}>
+                                            {fields.map(({ key, name, ...restField }) => {
+                                                const item = form.getFieldValue('items')[name];
+                                                const variant = products.find(p => p.id === item?.product_variant_id);
+
+                                                const quantity = item?.quantity || 0;
+                                                const price = variant?.price || 0;
+                                                const total = quantity * price;
+
+                                                return (
+                                                    <Col key={key} xs={24} sm={12} md={8} lg={6}>
+                                                        <Card
+                                                            size="small"
+                                                            style={{ width: '100%' }}
+                                                            title={variant?.name || 'Sản phẩm mới'}
+                                                            extra={
+                                                                <Button
+                                                                    type="text"
+                                                                    danger
+                                                                    icon={<DeleteOutlined />}
+                                                                    onClick={() => remove(name)}
+                                                                />
                                                             }
-                                                            return null;
-                                                        }}
-                                                    </Form.Item>
-                                                </Col>
-                                                <Col span={4}>
-                                                    <Form.Item {...restField} name={[name, 'note']} style={{ marginBottom: 0 }}>
-                                                        <Input placeholder="Ghi chú" />
-                                                    </Form.Item>
-                                                </Col>
-                                                <Col span={1}>
-                                                    <Button type="text" danger icon={<DeleteOutlined />} onClick={() => remove(name)} />
-                                                </Col>
-                                            </Row>
-                                        ))}
-                                        <Form.Item>
+                                                            bodyStyle={{ padding: 16 }}
+                                                        >
+                                                            <div style={{ textAlign: 'center', marginBottom: 16 }}>
+                                                                {variant?.thumbnail ? (
+                                                                    <Image src={variant.thumbnail} width={60} height={60} preview={false} />
+                                                                ) : (
+                                                                    <div
+                                                                        style={{
+                                                                            width: 60,
+                                                                            height: 60,
+                                                                            background: '#f0f0f0',
+                                                                            borderRadius: 4,
+                                                                            margin: '0 auto',
+                                                                        }}
+                                                                    />
+                                                                )}
+                                                            </div>
+
+                                                            {/* Chọn sản phẩm */}
+                                                            <Form.Item
+                                                                {...restField}
+                                                                name={[name, 'product_variant_id']}
+                                                                label="Sản phẩm"
+                                                                rules={[{ required: true, message: 'Chọn sản phẩm' }]}
+                                                            >
+                                                                <Select
+                                                                    placeholder="Chọn sản phẩm"
+                                                                    onChange={(val) => {
+                                                                        const selected = products.find(p => p.id === val);
+                                                                        const updatedItems = form.getFieldValue('items').map((it, idx) =>
+                                                                            idx === name
+                                                                                ? {
+                                                                                    ...it,
+                                                                                    product_variant_id: selected.id,
+                                                                                    quantity: 1,
+                                                                                }
+                                                                                : it
+                                                                        );
+                                                                        form.setFieldsValue({ items: updatedItems });
+                                                                    }}
+                                                                >
+                                                                    {products.map(p => (
+                                                                        <Select.Option key={p.id} value={p.id}>
+                                                                            {p.name}
+                                                                        </Select.Option>
+                                                                    ))}
+                                                                </Select>
+                                                            </Form.Item>
+
+                                                            {/* Số lượng */}
+                                                            <Form.Item {...restField} name={[name, 'quantity']} label="Số lượng">
+                                                                <InputNumber
+                                                                    min={0}
+                                                                    style={{ width: '100%' }}
+                                                                    value={quantity}
+                                                                    onChange={(val) => {
+                                                                        const updatedItems = form.getFieldValue('items').map((it, idx) =>
+                                                                            idx === name ? { ...it, quantity: val } : it
+                                                                        );
+                                                                        form.setFieldsValue({ items: updatedItems });
+                                                                    }}
+                                                                />
+                                                            </Form.Item>
+
+                                                            {/* Giá tiền */}
+                                                            <Form.Item label="Giá tiền">
+                                                                <InputNumber value={price} readOnly style={{ width: '100%' }} />
+                                                            </Form.Item>
+
+                                                            {/* Tổng tiền */}
+                                                            <Form.Item label="Tổng tiền">
+                                                                <InputNumber value={total} readOnly style={{ width: '100%', background: '#f5f5f5' }} />
+                                                            </Form.Item>
+                                                        </Card>
+                                                    </Col>
+                                                );
+                                            })}
+                                        </Row>
+
+                                        <Form.Item style={{ marginTop: 16 }}>
                                             <Button type="dashed" onClick={() => add()} block icon={<PlusOutlined />}>
                                                 Thêm sản phẩm mới
                                             </Button>
@@ -424,9 +416,7 @@ const Check = () => {
                             </Form.List>
                         </Form>
                     </Tabs.TabPane>
-
                 </Tabs>
-
             </Drawer>
         </div>
     );

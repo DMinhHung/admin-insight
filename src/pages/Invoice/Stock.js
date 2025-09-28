@@ -15,20 +15,14 @@ import {
     Image,
     InputNumber,
     Modal,
+    Tabs,
+    Card
 } from 'antd';
-import {
-    EditOutlined,
-    DeleteOutlined,
-    PlusOutlined,
-    ReloadOutlined,
-} from '@ant-design/icons';
+import { EditOutlined, DeleteOutlined, PlusOutlined, ReloadOutlined } from '@ant-design/icons';
 import axios from 'axios';
-import { Tabs } from 'antd';
 
-const { Title, Text } = Typography;
+const { Title } = Typography;
 const { confirm: modalConfirm } = Modal;
-const { TabPane } = Tabs
-
 
 const Stock = () => {
     const [searchText, setSearchText] = useState('');
@@ -58,15 +52,11 @@ const Stock = () => {
     const fetchStockInvoice = async (nameSearch = '') => {
         setLoading(true);
         try {
-            const res = await fetch(`${baseURL}/api/v1/admin/invoice/stock${nameSearch ? `?name=${nameSearch}` : ''}`, {
-                headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-            });
-            if (!res.ok) throw new Error('Cannot load stock invoices');
-            const resData = await res.json();
-            const items = resData?.data?.items || [];
-            setData(items.map((item) => ({ ...item, key: item.id })));
+            const res = await api.get(`/api/v1/admin/invoice/stock${nameSearch ? `?name=${nameSearch}` : ''}`);
+            const items = res?.data?.data?.items || [];
+            setData(items.map(item => ({ ...item, key: item.id })));
         } catch (err) {
-            message.error(err.message);
+            message.error(err.message || 'Không tải được phiếu kho');
         } finally {
             setLoading(false);
         }
@@ -123,21 +113,27 @@ const Stock = () => {
     const handleCreate = () => {
         setEditingInvoice(null);
         form.resetFields();
-        setIsDrawerOpen(true);
         form.setFieldsValue({ code: generateCode(12), items: [] });
+        setIsDrawerOpen(true);
     };
 
     const handleEdit = async (record) => {
         try {
             setLoading(true);
-            const res = await fetch(`${baseURL}/api/v1/admin/invoice/stock/view?id=${record.key}`, {
-                headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-            });
-            const data = await res.json();
-            if (!res.ok || !data?.data) throw new Error(data?.data?.message || 'Cannot fetch data');
+            const res = await api.get(`/api/v1/admin/invoice/stock/view`, { params: { id: record.key } });
+            const invoice = res?.data?.data;
+            if (!invoice) throw new Error('Cannot fetch invoice');
 
-            const invoice = data.data;
             setEditingInvoice(invoice.id);
+
+            const itemsWithOld = invoice.items.map(item => ({
+                product_variant_id: item.product_variant_id,
+                quantity: item.quantity,
+                price: item.price,
+                total: item.total,
+                product_variant: item.product_variant || [],
+            }));
+
             form.setFieldsValue({
                 code: invoice.code,
                 type: invoice.type,
@@ -145,13 +141,9 @@ const Stock = () => {
                 note: invoice.note,
                 status: invoice.status,
                 vendor_id: invoice.vendor_id,
-                items: invoice.items.map(item => ({
-                    productId: item.id,
-                    quantity: item.quantity,
-                    price: item.price,
-                    total: item.quantity * item.price,
-                })),
+                items: itemsWithOld,
             });
+
             setIsDrawerOpen(true);
         } catch (err) {
             message.error(err.message);
@@ -165,9 +157,9 @@ const Stock = () => {
             const values = await form.validateFields();
             setLoading(true);
 
-            const itemsWithTotal = (values.items || []).map(item => ({
+            const itemsWithDelta = (values.items || []).map(item => ({
                 invoice_id: editingInvoice || null,
-                product_id: item.productId,
+                product_variant_id: item.product_variant_id,
                 warehouse_id: values.warehouse_id || null,
                 quantity: item.quantity || 0,
                 price: item.price || 0,
@@ -182,30 +174,24 @@ const Stock = () => {
                 vendor_id: values.vendor_id || null,
                 note: values.note,
                 status: values.status || 1,
-                items: itemsWithTotal,
+                items: itemsWithDelta,
                 id: editingInvoice || undefined,
             };
 
             const url = editingInvoice
-                ? `${baseURL}/api/v1/admin/invoice/stock/update`
-                : `${baseURL}/api/v1/admin/invoice/stock/create`;
+                ? '/api/v1/admin/invoice/stock/update'
+                : '/api/v1/admin/invoice/stock/create';
 
-            const res = await fetch(url, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-                body: JSON.stringify(payload),
-            });
+            const res = await api.post(url, payload);
+            if (!res.data.status) throw new Error(res.data.message || 'Thao tác thất bại');
 
-            const data = await res.json();
-            if (!res.ok || !data) throw new Error(data?.data?.message || 'Operation failed');
-
-            message.success(editingInvoice ? 'Invoice updated successfully' : 'Invoice created successfully');
+            message.success(editingInvoice ? 'Cập nhật phiếu thành công' : 'Tạo phiếu thành công');
             setIsDrawerOpen(false);
             form.resetFields();
             setEditingInvoice(null);
             fetchStockInvoice();
         } catch (err) {
-            message.error(err.message || 'Validation failed');
+            message.error(err.message || 'Validate failed');
         } finally {
             setLoading(false);
         }
@@ -214,18 +200,13 @@ const Stock = () => {
     const handleDelete = async (id) => {
         try {
             setLoading(true);
-            const res = await fetch(`${baseURL}/api/v1/admin/invoice/stock/delete`, {
-                method: 'POST',
-                body: JSON.stringify({ id }),
-                headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-            });
-            const data = await res.json();
-            if (!res.ok || !data) throw new Error(data?.message || 'Failed to delete');
+            const res = await api.post('/api/v1/admin/invoice/stock/delete', { id });
+            if (!res.data.status) throw new Error(res.data.message || 'Xóa thất bại');
 
             setData(prev => prev.filter(item => item.key !== id));
-            message.success('Invoice deleted successfully');
+            message.success('Xóa phiếu thành công');
         } catch (err) {
-            message.error(err.message || 'Delete failed');
+            message.error(err.message || 'Xóa thất bại');
         } finally {
             setLoading(false);
         }
@@ -233,11 +214,11 @@ const Stock = () => {
 
     const showDeleteConfirm = (record) => {
         modalConfirm({
-            title: 'Are you sure you want to delete this invoice?',
+            title: 'Xác nhận xóa phiếu?',
             content: `Code: ${record.code}`,
-            okText: 'Confirm',
+            okText: 'Xác nhận',
             okType: 'danger',
-            cancelText: 'Cancel',
+            cancelText: 'Hủy',
             onOk() {
                 return handleDelete(record.key);
             },
@@ -245,36 +226,29 @@ const Stock = () => {
     };
 
     const columns = [
-        { title: 'Mã nhập hàng', dataIndex: 'code' },
+        { title: 'Mã phiếu', dataIndex: 'code' },
         { title: 'Thời gian', dataIndex: 'created_at' },
         {
             title: 'Nhà cung cấp',
             dataIndex: 'vendor',
-            render: (vendorArray) => vendorArray?.[0]?.name || 'Không có',
+            render: v => v?.[0]?.name || 'Không có',
         },
         {
             title: 'Loại hóa đơn',
             dataIndex: 'type',
-            render: (type) => {
-                switch (type) {
-                    case 1: return 'Nhập Kho';
-                    case 2: return 'Xuất Kho';
-                    case 3: return 'Hủy Kho';
-                    default: return 'Không xác định';
-                }
-            },
+            render: t => t === 1 ? 'Nhập Kho' : t === 2 ? 'Xuất Kho' : t === 3 ? 'Hủy Kho' : 'Không xác định',
         },
-        { title: 'Mô tả', dataIndex: 'note' },
+        { title: 'Ghi chú', dataIndex: 'note' },
         {
             title: 'Trạng thái',
             dataIndex: 'status',
-            render: (value) => value === 1 ? <Tag color="green">Active</Tag> : <Tag color="red">Inactive</Tag>,
+            render: val => val === 1 ? <Tag color="green">Hoạt động</Tag> : <Tag color="red">Ngưng hoạt động</Tag>,
         },
         {
             title: 'Hành động',
             key: 'actions',
             render: (_, record) => (
-                <Space size="middle">
+                <Space>
                     <Button type="primary" icon={<EditOutlined />} onClick={() => handleEdit(record)} />
                     <Button danger icon={<DeleteOutlined />} onClick={() => showDeleteConfirm(record)} />
                 </Space>
@@ -285,22 +259,21 @@ const Stock = () => {
     return (
         <div style={{ padding: 24 }}>
             <Row justify="space-between" align="middle" style={{ marginBottom: 24 }}>
-                <Col>
-                    <Title level={2}>Xuất Nhập Kho</Title>
-                </Col>
+                <Col><Title level={2}>Xuất Nhập Kho</Title></Col>
                 <Col>
                     <Space>
                         <Input
-                            placeholder="Search by code..."
+                            placeholder="Tìm kiếm code..."
                             value={searchText}
-                            onChange={(e) => setSearchText(e.target.value)}
-                            style={{ width: 200 }}
+                            onChange={e => setSearchText(e.target.value)}
                             onPressEnter={handleSearch}
+                            style={{ width: 200 }}
                         />
-                        <Button type="primary" onClick={handleCreate}>Tạo</Button>
+                        <Button type="primary" onClick={handleCreate}>Tạo mới</Button>
                     </Space>
                 </Col>
             </Row>
+
             <Table columns={columns} dataSource={data} loading={loading} rowKey="key" />
 
             <Drawer
@@ -313,7 +286,7 @@ const Stock = () => {
                 extra={
                     <Space>
                         <Button onClick={() => { setIsDrawerOpen(false); form.resetFields(); setEditingInvoice(null); }}>Hủy</Button>
-                        <Button type="primary" loading={loading} onClick={handleDrawerOk}>{editingInvoice ? 'Update' : 'Create'}</Button>
+                        <Button type="primary" loading={loading} onClick={handleDrawerOk}>{editingInvoice ? 'Cập nhật' : 'Tạo'}</Button>
                     </Space>
                 }
             >
@@ -322,15 +295,14 @@ const Stock = () => {
                         <Tabs.TabPane tab="Thông tin phiếu" key="1">
                             <Row gutter={16}>
                                 <Col span={12}>
-                                    <Form.Item name="code" label="Code" rules={[{ required: true, message: 'Nhập hoặc random' }]}>
+                                    <Form.Item name="code" label="Code" rules={[{ required: true }]}>
                                         <Input
-                                            placeholder="Tự động / Nhập thủ công"
                                             addonAfter={<Button icon={<ReloadOutlined />} size="small" onClick={() => form.setFieldsValue({ code: generateCode(8) })} />}
                                         />
                                     </Form.Item>
                                 </Col>
                                 <Col span={12}>
-                                    <Form.Item name="type" label="Loại hóa đơn" rules={[{ required: true, message: 'Chọn loại hóa đơn' }]}>
+                                    <Form.Item name="type" label="Loại hóa đơn" rules={[{ required: true }]}>
                                         <Select placeholder="Chọn loại hóa đơn">
                                             <Select.Option value={1}>Nhập Kho</Select.Option>
                                             <Select.Option value={2}>Xuất Kho</Select.Option>
@@ -342,14 +314,14 @@ const Stock = () => {
 
                             <Row gutter={16}>
                                 <Col span={12}>
-                                    <Form.Item name="vendor_id" label="Nhà Cung Cấp" rules={[{ required: true, message: 'Chọn nhà cung cấp' }]}>
+                                    <Form.Item name="vendor_id" label="Nhà Cung Cấp" rules={[{ required: true }]}>
                                         <Select placeholder="Chọn nhà cung cấp" showSearch optionFilterProp="children">
                                             {vendors.map(v => <Select.Option key={v.id} value={v.id}>{v.name}</Select.Option>)}
                                         </Select>
                                     </Form.Item>
                                 </Col>
                                 <Col span={12}>
-                                    <Form.Item name="warehouse_id" label="Chọn Kho" rules={[{ required: true, message: 'Chọn kho' }]}>
+                                    <Form.Item name="warehouse_id" label="Chọn Kho" rules={[{ required: true }]}>
                                         <Select placeholder="Chọn kho" showSearch optionFilterProp="children">
                                             {warehouses.map(wh => <Select.Option key={wh.id} value={wh.id}>{wh.name}</Select.Option>)}
                                         </Select>
@@ -359,10 +331,10 @@ const Stock = () => {
 
                             <Row gutter={16}>
                                 <Col span={12}>
-                                    <Form.Item name="status" label="Trạng thái" rules={[{ required: true, message: 'Chọn trạng thái' }]}>
-                                        <Select placeholder="Chọn trạng thái">
-                                            <Select.Option value={1}>Active</Select.Option>
-                                            <Select.Option value={2}>Inactive</Select.Option>
+                                    <Form.Item name="status" label="Trạng thái" rules={[{ required: true }]}>
+                                        <Select>
+                                            <Select.Option value={1}><Tag color="green">Hoạt động</Tag></Select.Option>
+                                            <Select.Option value={0}><Tag color="red">Ngưng hoạt động</Tag></Select.Option>
                                         </Select>
                                     </Form.Item>
                                 </Col>
@@ -378,153 +350,147 @@ const Stock = () => {
                                 </Col>
                             </Row>
 
-                            <Row gutter={16}>
-                                <Col span={24}>
-                                    <Form.Item name="note" label="Ghi chú">
-                                        <Input.TextArea placeholder="Ghi chú" rows={4} />
-                                    </Form.Item>
-                                </Col>
-                            </Row>
+                            <Form.Item name="note" label="Ghi chú">
+                                <Input.TextArea rows={4} />
+                            </Form.Item>
                         </Tabs.TabPane>
                         <Tabs.TabPane tab="Danh sách sản phẩm" key="2">
-                            <Row gutter={12} style={{ marginBottom: 8, fontWeight: 'bold', padding: 12, background: '#f0f0f0', borderRadius: 6 }}>
-                                <Col style={{ width: 60 }}>Ảnh</Col>
-                                <Col flex={2}>Sản phẩm</Col>
-                                <Col flex={1}>Số lượng</Col>
-                                <Col flex={1}>Giá</Col>
-                                <Col flex={1}>Tổng</Col>
-                                <Col style={{ width: 50 }}></Col>
-                            </Row>
-
                             <Form.List name="items">
                                 {(fields, { add, remove }) => (
                                     <>
-                                        {fields.map(({ key, name, ...restField }) => {
-                                            const productId = form.getFieldValue(['items', name, 'productId']);
-                                            const product = products.find(p => p.id === productId);
+                                        <Row gutter={[16, 16]}>
+                                            {fields.map(({ key, name, ...restField }) => {
+                                                const item = form.getFieldValue('items')[name];
+                                                const variant = item?.product_variant?.[0];
 
-                                            const getProductName = (product) => {
-                                                if (!product) return '';
-                                                const baseName = product.item?.name || '';
-                                                const attrs = product.attributes?.map(a => a.value).join(' - ') || '';
-                                                return attrs ? `${baseName} - ${attrs}` : baseName;
-                                            };
+                                                return (
+                                                    <Col key={key} xs={24} sm={12} md={8} lg={6}>
+                                                        <Card
+                                                            size="small"
+                                                            style={{ width: '100%' }}
+                                                            title={variant?.name || 'Sản phẩm mới'}
+                                                            extra={
+                                                                <Button
+                                                                    type="text"
+                                                                    danger
+                                                                    icon={<DeleteOutlined />}
+                                                                    onClick={() => remove(name)}
+                                                                />
+                                                            }
+                                                            bodyStyle={{ padding: 16 }}
+                                                        >
+                                                            <div style={{ textAlign: 'center', marginBottom: 16 }}>
+                                                                {variant?.thumbnail ? (
+                                                                    <Image src={variant.thumbnail} width={60} height={60} preview={false} />
+                                                                ) : (
+                                                                    <div
+                                                                        style={{
+                                                                            width: 60,
+                                                                            height: 60,
+                                                                            background: '#f0f0f0',
+                                                                            borderRadius: 4,
+                                                                            margin: '0 auto',
+                                                                        }}
+                                                                    />
+                                                                )}
+                                                            </div>
 
-                                            const getProductThumbnail = (product) => {
-                                                if (!product) return '';
-                                                return product.thumbnail || product.item?.thumbnail || '';
-                                            };
-
-                                            return (
-                                                <Row
-                                                    key={key}
-                                                    gutter={12}
-                                                    align="middle"
-                                                    style={{
-                                                        marginBottom: 12,
-                                                        padding: 12,
-                                                        border: '1px solid #d9d9d9',
-                                                        borderRadius: 6,
-                                                        background: '#fafafa',
-                                                    }}
-                                                >
-                                                    <Col>
-                                                        {product?.thumbnail || product?.item?.thumbnail ? (
-                                                            <Image
-                                                                src={product.thumbnail || product.item?.thumbnail}
-                                                                width={50}
-                                                                height={50}
-                                                                preview={false}
-                                                            />
-                                                        ) : (
-                                                            <div style={{ width: 50, height: 50, background: '#ccc', borderRadius: 4 }} />
-                                                        )}
-                                                    </Col>
-                                                    <Col flex={2}>
-                                                        <Form.Item {...restField} name={[name, 'productId']} rules={[{ required: true, message: 'Chọn sản phẩm' }]} style={{ marginBottom: 0 }}>
-                                                            <Select
-                                                                placeholder="Chọn sản phẩm"
-                                                                showSearch
-                                                                optionFilterProp="children"
-                                                                onChange={(val) => {
-                                                                    const selected = products.find(p => p.id === val);
-                                                                    form.setFieldsValue({
-                                                                        items: form.getFieldValue('items').map((it, idx) =>
-                                                                            idx === name
-                                                                                ? { ...it, price: selected?.price || 0, quantity: 1, total: selected?.price || 0 }
-                                                                                : it
-                                                                        ),
-                                                                    });
-                                                                }}
+                                                            <Form.Item
+                                                                {...restField}
+                                                                name={[name, 'product_variant_id']}
+                                                                label="Sản phẩm"
+                                                                rules={[{ required: true, message: 'Vui lòng chọn sản phẩm' }]}
+                                                                labelCol={{ span: 24 }}
                                                             >
-                                                                {products.map((p) => (
-                                                                    <Select.Option key={p.id} value={p.id}>
-                                                                        {getProductName(p)}
-                                                                    </Select.Option>
-                                                                ))}
-                                                            </Select>
-                                                        </Form.Item>
-                                                    </Col>
+                                                                <Select
+                                                                    placeholder="Chọn sản phẩm"
+                                                                    onChange={(val) => {
+                                                                        const selected = products.find(p => p.id === val);
+                                                                        const updatedItems = form.getFieldValue('items').map((it, idx) =>
+                                                                            idx === name
+                                                                                ? {
+                                                                                    ...it,
+                                                                                    product_variant_id: selected.id,
+                                                                                    price: selected.price,
+                                                                                    quantity: 1,
+                                                                                    total: selected.price,
+                                                                                    product_variant: [selected],
+                                                                                    oldQuantity: 0,
+                                                                                }
+                                                                                : it
+                                                                        );
+                                                                        form.setFieldsValue({ items: updatedItems });
+                                                                    }}
+                                                                >
+                                                                    {products.map(p => (
+                                                                        <Select.Option key={p.id} value={p.id}>
+                                                                            {p.name}
+                                                                        </Select.Option>
+                                                                    ))}
+                                                                </Select>
+                                                            </Form.Item>
 
-                                                    <Col flex={1}>
-                                                        <Form.Item {...restField} name={[name, 'quantity']} rules={[{ required: true, message: 'Nhập số lượng' }]} style={{ marginBottom: 0 }}>
-                                                            <InputNumber
-                                                                min={1}
-                                                                placeholder="Số lượng"
-                                                                style={{ width: '100%' }}
-                                                                onChange={(val) => {
-                                                                    const price = form.getFieldValue(['items', name, 'price']) || 0;
-                                                                    form.setFieldsValue({
-                                                                        items: form.getFieldValue('items').map((it, idx) =>
-                                                                            idx === name ? { ...it, total: val * price } : it
-                                                                        ),
-                                                                    });
-                                                                }}
-                                                            />
-                                                        </Form.Item>
-                                                    </Col>
+                                                            <Form.Item
+                                                                {...restField}
+                                                                name={[name, 'quantity']}
+                                                                label="Số lượng"
+                                                                labelCol={{ span: 24 }}
+                                                            >
+                                                                <InputNumber
+                                                                    min={1}
+                                                                    style={{ width: '100%' }}
+                                                                    value={item?.quantity}
+                                                                    onChange={(val) => {
+                                                                        const updatedItems = form.getFieldValue('items').map((it, idx) =>
+                                                                            idx === name
+                                                                                ? { ...it, quantity: val, total: val * (it.price || 0) }
+                                                                                : it
+                                                                        );
+                                                                        form.setFieldsValue({ items: updatedItems });
+                                                                    }}
+                                                                />
+                                                            </Form.Item>
 
-                                                    <Col flex={1}>
-                                                        <Form.Item {...restField} name={[name, 'price']} rules={[{ required: true, message: 'Nhập giá' }]} style={{ marginBottom: 0 }}>
-                                                            <InputNumber
-                                                                min={0}
-                                                                placeholder="Giá"
-                                                                style={{ width: '100%' }}
-                                                                formatter={(val) => `${val}`.replace(/\B(?=(\d{3})+(?!\d))/g, '.')}
-                                                                parser={(val) => val.replace(/\./g, '')}
-                                                                onChange={(val) => {
-                                                                    const quantity = form.getFieldValue(['items', name, 'quantity']) || 0;
-                                                                    form.setFieldsValue({
-                                                                        items: form.getFieldValue('items').map((it, idx) =>
-                                                                            idx === name ? { ...it, total: quantity * val } : it
-                                                                        ),
-                                                                    });
-                                                                }}
-                                                            />
-                                                        </Form.Item>
-                                                    </Col>
+                                                            <Form.Item
+                                                                {...restField}
+                                                                name={[name, 'price']}
+                                                                label="Giá tiền"
+                                                                labelCol={{ span: 24 }}
+                                                            >
+                                                                <InputNumber
+                                                                    min={0}
+                                                                    style={{ width: '100%' }}
+                                                                    value={item?.price}
+                                                                    onChange={(val) => {
+                                                                        const updatedItems = form.getFieldValue('items').map((it, idx) =>
+                                                                            idx === name
+                                                                                ? { ...it, price: val, total: val * (it.quantity || 0) }
+                                                                                : it
+                                                                        );
+                                                                        form.setFieldsValue({ items: updatedItems });
+                                                                    }}
+                                                                />
+                                                            </Form.Item>
 
-                                                    <Col flex={1}>
-                                                        <Form.Item {...restField} name={[name, 'total']} style={{ marginBottom: 0 }}>
-                                                            <InputNumber
-                                                                placeholder="Tổng"
-                                                                style={{ width: '100%' }}
-                                                                disabled
-                                                                value={(form.getFieldValue(['items', name, 'quantity']) || 0) * (form.getFieldValue(['items', name, 'price']) || 0)}
-                                                                formatter={(val) => val?.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.')}
-                                                                parser={(val) => val?.replace(/\./g, '')}
-                                                            />
-                                                        </Form.Item>
+                                                            <Form.Item
+                                                                {...restField}
+                                                                name={[name, 'total']}
+                                                                label="Tổng tiền"
+                                                                labelCol={{ span: 24 }}
+                                                            >
+                                                                <InputNumber
+                                                                    value={(item?.quantity || 0) * (item?.price || 0)}
+                                                                    disabled
+                                                                    style={{ width: '100%', background: '#f5f5f5' }}
+                                                                />
+                                                            </Form.Item>
+                                                        </Card>
                                                     </Col>
+                                                );
+                                            })}
+                                        </Row>
 
-                                                    <Col style={{ width: 50 }}>
-                                                        <Button type="text" danger icon={<DeleteOutlined />} onClick={() => remove(name)} />
-                                                    </Col>
-                                                </Row>
-                                            );
-                                        })}
-
-                                        <Form.Item>
+                                        <Form.Item style={{ marginTop: 16 }}>
                                             <Button type="dashed" onClick={() => add()} block icon={<PlusOutlined />}>
                                                 Thêm sản phẩm mới
                                             </Button>
