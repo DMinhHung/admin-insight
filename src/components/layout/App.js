@@ -14,7 +14,8 @@ import {
   FileDoneOutlined,
   ApartmentOutlined,
   IdcardOutlined,
-  AppstoreOutlined
+  AppstoreOutlined,
+  FileImageOutlined
 } from '@ant-design/icons';
 import {
   Button,
@@ -55,18 +56,19 @@ const App = () => {
     if (pathname.startsWith('/category')) return { selectedKey: '3', openKeys: [] };
     if (pathname.startsWith('/product-attribute')) return { selectedKey: '4-2', openKeys: ['4'] };
     if (pathname.startsWith('/product')) return { selectedKey: '4-1', openKeys: ['4'] };
+    if (pathname.startsWith('/group-customer')) return { selectedKey: '5-3', openKeys: ['5'] };
+    if (pathname.startsWith('/customer-company')) return { selectedKey: '5-2', openKeys: ['5'] };
     if (pathname.startsWith('/customer')) return { selectedKey: '5-1', openKeys: ['5'] };
-    if (pathname.startsWith('/group-customer')) return { selectedKey: '5-2', openKeys: ['5'] };
     if (pathname.startsWith('/vendor')) return { selectedKey: '6-1', openKeys: ['6'] };
     if (pathname.startsWith('/group-vendor')) return { selectedKey: '6-2', openKeys: ['6'] };
     if (pathname.startsWith('/warehouse')) return { selectedKey: '7-1', openKeys: ['7'] };
     if (pathname.startsWith('/stock-invoice')) return { selectedKey: '7-2', openKeys: ['7'] };
     if (pathname.startsWith('/check-invoice')) return { selectedKey: '7-3', openKeys: ['7'] };
-    if (pathname.startsWith('/employee')) return { selectedKey: '8-1', openKeys: [] };
-    if (pathname.startsWith('/schedule')) return { selectedKey: '8-2', openKeys: [] };
+    if (pathname.startsWith('/employee')) return { selectedKey: '8', openKeys: [] };
     if (pathname.startsWith('/user')) return { selectedKey: '9', openKeys: [] };
     if (pathname.startsWith('/item-shopee-list')) return { selectedKey: '11-1', openKeys: [] };
     if (pathname.startsWith('/item-tiktok-list')) return { selectedKey: '11-2', openKeys: [] };
+    if (pathname.startsWith('/banner')) return { selectedKey: '12', openKeys: [] };
     return { selectedKey: '1', openKeys: [] };
   };
 
@@ -130,6 +132,14 @@ const App = () => {
               }} />, label: <Link to="/dashboard">Thống Kê</Link>
             },
             {
+              key: '12', icon: <FileImageOutlined style={{
+                height: 56,
+                lineHeight: '56px',
+                margin: '6px 0',
+                borderRadius: 8,
+              }} />, label: <Link to="/banner">Hình Quảng Cáo</Link>
+            },
+            {
               key: '2', icon: <BlockOutlined style={{
                 height: 56,
                 lineHeight: '56px',
@@ -184,7 +194,8 @@ const App = () => {
               label: 'Khách Hàng',
               children: [
                 { key: '5-1', label: <Link to="/customer">Danh Sách</Link> },
-                { key: '5-2', label: <Link to="/group-customer">Nhóm Khách Hàng</Link> },
+                { key: '5-2', label: <Link to="/customer-company">Danh Sách Công Ty</Link> },
+                { key: '5-3', label: <Link to="/group-customer">Nhóm Khách Hàng Công Ty</Link> },
               ],
             },
             {
@@ -217,18 +228,14 @@ const App = () => {
               ],
             },
             {
-              key: '8', icon: <IdcardOutlined style={{
+              key: '8',
+              icon: <IdcardOutlined style={{
                 height: 56,
                 lineHeight: '56px',
                 margin: '6px 0',
                 borderRadius: 8,
               }} />,
-              label: 'Nhân Viên',
-              children: [
-                { key: '8-1', label: <Link to="/employee">Nhân Viên</Link> },
-                { key: '8-2', label: <Link to="/schedule">Lịch Làm Việc</Link>, disabled: true },
-                { key: '8-3', label: <Link to="/stock-invoice">Bảng Lương</Link>, disabled: true },
-              ],
+              label: <Link to="/employee">Nhân Viên</Link>,
             },
             {
               key: '9', icon: <UserOutlined style={{

@@ -22,6 +22,8 @@ import EmployeeSchedule from "../pages/Employee/EmployeeSchedule";
 import { ForgotPassword } from "../pages/Login/ForgetPassword";
 import { VerifyOtp } from "../pages/Login/VerifyOtp";
 import { ResetPassword } from "../pages/Login/ResetPassword";
+import CustomerCompany from "../pages/Customers/CustomerCompany";
+import Banner from "../pages/Banner/Banner";
 
 const AppRoutes = () => {
   const token = localStorage.getItem("accessToken");
@@ -47,6 +49,7 @@ const AppRoutes = () => {
       >
         <Route index element={<Navigate to="dashboard" replace />} />
         <Route path="dashboard" element={<Dashboard />} />
+        <Route path="banner" element={<Banner />} />
         <Route path="brand" element={<Brand />} />
         <Route path="category" element={<Category />} />
         <Route path="product" element={<Product />} />
@@ -54,6 +57,7 @@ const AppRoutes = () => {
         <Route path="product-variant" element={<ProductVariant />} />
         <Route path="user" element={<User />} />
         <Route path="customer" element={<Customers />} />
+        <Route path="customer-company" element={<CustomerCompany />} />
         <Route path="group-customer" element={<GroupCustomer />} />
         <Route path="vendor" element={<Vendor />} />
         <Route path="group-vendor" element={<GroupVendor />} />
