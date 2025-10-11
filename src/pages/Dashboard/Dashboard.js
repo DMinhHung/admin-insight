@@ -1,8 +1,15 @@
 import React, { useState, useMemo } from 'react';
-import { Line, Column, Pie, Bar } from '@ant-design/plots';
-import { Select } from 'antd';
+import { Line, Pie } from '@ant-design/plots';
+import { Tabs, Select } from 'antd';
+import {
+  AppstoreOutlined,
+  ShoppingOutlined,
+  FileTextOutlined,
+  ProfileOutlined,
+} from '@ant-design/icons';
 
 const { Option } = Select;
+const { TabPane } = Tabs;
 
 const Dashboard = () => {
   const [period, setPeriod] = useState('today');
@@ -29,41 +36,32 @@ const Dashboard = () => {
     })),
   };
 
-  const topProducts = [
-    { product: 'Laptop Dell XPS', sold: 120 },
-    { product: 'MacBook Air M2', sold: 100 },
-    { product: 'Asus ROG', sold: 95 },
-    { product: 'HP Omen', sold: 80 },
-    { product: 'Lenovo ThinkPad', sold: 60 },
-  ];
-
   const orderStatus = [
     { type: 'Hoàn thành', value: 420 },
     { type: 'Đang xử lý', value: 80 },
     { type: 'Đã hủy', value: 30 },
   ];
 
-  const revenueConfig = useMemo(() => ({
-    data: revenueData[period],
-    xField: 'time',
-    yField: 'revenue',
-    color: '#1677ff',
-    point: { size: 4 },
-    height: 220,
-    yAxis: {
-      label: { formatter: v => `${(v / 1_000_000).toFixed(1)}tr` },
-    },
-    tooltip: { formatter: d => ({ name: 'Doanh thu', value: d.revenue.toLocaleString() + ' đ' }) },
-  }), [period]);
-
-  const topProductConfig = {
-    data: topProducts,
-    xField: 'product',
-    yField: 'sold',
-    color: '#52c41a',
-    height: 220,
-    columnWidthRatio: 0.6,
-  };
+  const revenueConfig = useMemo(
+    () => ({
+      data: revenueData[period],
+      xField: 'time',
+      yField: 'revenue',
+      color: '#1677ff',
+      point: { size: 4 },
+      height: 220,
+      yAxis: {
+        label: { formatter: v => `${(v / 1_000_000).toFixed(1)}tr` },
+      },
+      tooltip: {
+        formatter: d => ({
+          name: 'Doanh thu',
+          value: d.revenue.toLocaleString() + ' đ',
+        }),
+      },
+    }),
+    [period],
+  );
 
   const orderConfig = {
     data: orderStatus,
@@ -80,18 +78,94 @@ const Dashboard = () => {
     },
   };
 
+  // Thẻ thống kê đầu trang
+  const stats = [
+    {
+      title: 'DANH MỤC',
+      value: 4,
+      icon: <AppstoreOutlined style={{ fontSize: 28, color: '#1890ff' }} />,
+      borderColor: '#1890ff',
+    },
+    {
+      title: 'SẢN PHẨM',
+      value: 16,
+      icon: <ShoppingOutlined style={{ fontSize: 28, color: '#52c41a' }} />,
+      borderColor: '#52c41a',
+    },
+    {
+      title: 'ĐƠN HÀNG',
+      value: 12,
+      icon: <ProfileOutlined style={{ fontSize: 28, color: '#13c2c2' }} />,
+      borderColor: '#13c2c2',
+    },
+    {
+      title: 'BÀI VIẾT',
+      value: 3,
+      icon: <FileTextOutlined style={{ fontSize: 28, color: '#faad14' }} />,
+      borderColor: '#faad14',
+    },
+  ];
+
   return (
-    <div style={{ padding: 20, background: '#f5f5f5'}}>
-      <div style={{
-        marginTop: 20,
-        display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fit, minmax(340px,1fr))',
-        gap: 20
-      }}>
-        <div style={{ background: '#fff', padding: 16, borderRadius: 8 }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+    <div style={{ padding: 20}}>
+      <h2 style={{ marginBottom: 16 }}>Bảng điều khiển</h2>
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+          gap: 16,
+          marginBottom: 24,
+        }}
+      >
+        {stats.map((s, i) => (
+          <div
+            key={i}
+            style={{
+              background: '#fff',
+              borderRadius: 8,
+              padding: '16px 20px',
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              boxShadow: '0 2px 6px rgba(0,0,0,0.05)',
+              borderLeft: `4px solid ${s.borderColor}`,
+            }}
+          >
+            <div>
+              <div style={{ fontSize: 12, color: '#888', fontWeight: 600 }}>
+                {s.title}
+              </div>
+              <div style={{ fontSize: 24, fontWeight: 700 }}>{s.value}</div>
+            </div>
+            {s.icon}
+          </div>
+        ))}
+      </div>
+
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(340px,1fr))',
+          gap: 20,
+        }}
+      >
+        <div
+          style={{ background: '#fff', padding: 16, borderRadius: 8 }}
+        >
+          <div
+            style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+            }}
+          >
             <h4>Doanh thu</h4>
-            <Select value={period} onChange={setPeriod} size="small" style={{ width: 120 }}>
+            <Select
+              value={period}
+              onChange={setPeriod}
+              size="small"
+              style={{ width: 120 }}
+            >
               <Option value="today">Hôm nay</Option>
               <Option value="7days">7 ngày</Option>
               <Option value="month">1 tháng</Option>
@@ -100,12 +174,9 @@ const Dashboard = () => {
           <Line {...revenueConfig} />
         </div>
 
-        {/* <div style={{ background: '#fff', padding: 16, borderRadius: 8 }}>
-          <h4>Top sản phẩm</h4>
-          <Column {...topProductConfig} />
-        </div> */}
-
-        <div style={{ background: '#fff', padding: 16, borderRadius: 8 }}>
+        <div
+          style={{ background: '#fff', padding: 16, borderRadius: 8 }}
+        >
           <h4>Trạng thái đơn hàng</h4>
           <Pie {...orderConfig} />
         </div>
